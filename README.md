@@ -6,14 +6,14 @@ Grupo 05 · ASM 2026/2
 ## Integrantes
 
 | Integrante | Responsabilidade principal | Matrícula |
-|---|---| --- |
-| Integrante 1 | Arquitetura e C4 |
-| Integrante 2 | Aplicativo Mobile |
-| Integrante 3 | Backend e domínio |
-| Maria Luísa Lacerda | Banco de dados | 257115
-| Integrante 5 | Mensageria |
-| Integrante 6 | Docker e Observabilidade |
-| Integrante 7 | CI/CD e Qualidade |
+|---|---|---|
+| Integrante 1 | Arquitetura e C4 | — |
+| Integrante 2 | Aplicativo Mobile | — |
+| Integrante 3 | Backend e domínio | — |
+| Maria Luísa Lacerda | Banco de dados | 257115 |
+| Integrante 5 | Mensageria | — |
+| Integrante 6 | Docker e Observabilidade | — |
+| Integrante 7 | CI/CD e Qualidade | — |
 
 ---
 
@@ -143,10 +143,19 @@ A arquitetura pode evoluir durante o projeto, desde que alterações relevantes 
 │
 ├── services/
 │   ├── api/
+│   │   └── src/
+│   │       ├── main/
+│   │       │   ├── java/
+│   │       │   └── resources/
+│   │       │       ├── application.yml
+│   │       │       └── db/
+│   │       │           └── migration/
+│   │       └── test/
 │   └── notification-worker/
 │
 ├── infrastructure/
 │   ├── database/
+│   │   └── README.md
 │   ├── messaging/
 │   ├── observability/
 │   └── docker/
@@ -156,6 +165,8 @@ A arquitetura pode evoluir durante o projeto, desde que alterações relevantes 
 │   ├── architecture/
 │   ├── c4/
 │   ├── diagrams/
+│   ├── database/
+│   │   └── README.md
 │   └── api/
 │
 ├── .github/
@@ -166,6 +177,12 @@ A arquitetura pode evoluir durante o projeto, desde que alterações relevantes 
 ├── AGENTS.md
 └── .gitignore
 ```
+
+> **Banco de dados:** as migrations Flyway que definem e evoluem o schema ficam em
+> `services/api/src/main/resources/db/migration/`. A pasta `infrastructure/database/`
+> concentra apenas artefatos operacionais/de infraestrutura do PostgreSQL e não deve
+> duplicar migrations. A documentação de modelagem, convenções e ownership fica em
+> `docs/database/`, enquanto o DER fica em `docs/diagrams/`.
 
 ---
 
@@ -276,7 +293,7 @@ A comunicação assíncrona entre a API e seus consumidores será realizada atra
 
 ## Banco de dados
 
-O PostgreSQL será utilizado como banco relacional principal.
+O PostgreSQL será utilizado como banco relacional principal e o Flyway será utilizado para versionar a evolução do schema.
 
 O modelo inicial deverá representar pelo menos:
 
@@ -296,7 +313,17 @@ Tutor
 
 A estratégia de ownership dos dados deverá ser documentada para evitar que componentes independentes acessem diretamente dados pelos quais não são responsáveis.
 
-As alterações no banco devem ser versionadas por migrations.
+Os artefatos de banco deverão seguir estes caminhos:
+
+```text
+services/api/src/main/resources/db/migration/   # migrations Flyway: schema e seeds versionados
+infrastructure/database/                        # artefatos operacionais/de infraestrutura do PostgreSQL
+docs/database/                                  # documentação de modelagem, convenções e ownership
+docs/diagrams/                                  # DER e demais diagramas
+docs/adr/ADR-003-persistencia.md                # decisão arquitetural de persistência
+```
+
+As alterações estruturais e os dados iniciais controlados pelo projeto devem ser versionados por migrations. Não devem existir scripts concorrentes de criação do schema fora do diretório de migrations do Flyway.
 
 ---
 
@@ -611,29 +638,29 @@ Exemplo:
 ```bash
 git checkout develop
 git pull origin develop
-git checkout -b feat/12-create-booking
+git checkout -b feat/create-booking
 ```
 
 Convenção:
 
 ```text
-feat/<issue>-<descricao>
-fix/<issue>-<descricao>
-infra/<issue>-<descricao>
-docs/<issue>-<descricao>
-test/<issue>-<descricao>
-refactor/<issue>-<descricao>
+feat/<descricao>
+fix/<descricao>
+infra/<descricao>
+docs/<descricao>
+test/<descricao>
+refactor/<descricao>
 ```
 
 Exemplos:
 
 ```text
-feat/12-create-booking
-feat/15-caregiver-search
-infra/18-rabbitmq
-infra/22-observability
-docs/25-c4-container
-fix/30-booking-validation
+feat/create-booking
+feat/caregiver-search
+infra/rabbitmq
+infra/observability
+docs/c4-container
+fix/booking-validation
 ```
 
 ---
@@ -688,7 +715,7 @@ develop → main
 Cada Pull Request deverá informar:
 
 - objetivo da alteração;
-- Issue relacionada;
+- contexto ou motivação da alteração, quando necessário;
 - como testar;
 - evidências quando necessário;
 - possíveis impactos arquiteturais.
@@ -891,6 +918,7 @@ docs/
 ├── architecture/
 ├── c4/
 ├── diagrams/
+├── database/
 └── api/
 ```
 
@@ -899,7 +927,8 @@ Principais referências:
 - [Padrões obrigatórios do repositório](AGENTS.md)
 - `docs/adr/` — decisões arquiteturais
 - `docs/c4/` — modelagem C4
-- `docs/diagrams/` — diagramas complementares
+- `docs/diagrams/` — diagramas complementares, incluindo o DER
+- `docs/database/` — documentação de modelagem, convenções e ownership dos dados
 - `docs/api/` — contratos da API
 - `docs/architecture/` — documentação arquitetural geral
 
