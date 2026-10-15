@@ -1,4 +1,6 @@
 # Trabalho Final · Arquitetura de Software Multiplataforma
+PUC MINAS - Pós-Graduação em Arquitetura de Software Distribuído
+
 Grupo 05 · ASM 2026/2
 
 ## Integrantes
