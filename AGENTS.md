@@ -55,7 +55,8 @@ Observabilidade
 - Maven.
 
 ### Banco de dados
-- PostgreSQL.
+- PostgreSQL;
+- Flyway para migrations.
 
 ### Mensageria
 - RabbitMQ;
@@ -248,22 +249,22 @@ branches de trabalho
 Utilizar:
 
 ```text
-feat/<issue>-<descricao>
-fix/<issue>-<descricao>
-infra/<issue>-<descricao>
-docs/<issue>-<descricao>
-test/<issue>-<descricao>
-refactor/<issue>-<descricao>
+feat/<descricao>
+fix/<descricao>
+infra/<descricao>
+docs/<descricao>
+test/<descricao>
+refactor/<descricao>
 ```
 
 Exemplos:
 
 ```text
-feat/12-create-booking
-infra/18-rabbitmq
-infra/22-observability
-docs/25-c4-container
-fix/30-booking-validation
+feat/create-booking
+infra/rabbitmq
+infra/observability
+docs/c4-container
+fix/booking-validation
 ```
 
 Toda branch de trabalho deve ser criada a partir da versão mais recente da `develop`.
@@ -271,7 +272,7 @@ Toda branch de trabalho deve ser criada a partir da versão mais recente da `dev
 ```bash
 git checkout develop
 git pull origin develop
-git checkout -b feat/12-create-booking
+git checkout -b feat/create-booking
 ```
 
 ## Commits
@@ -304,7 +305,9 @@ services/api/
     │   │       ├── messaging/
     │   │       └── config/
     │   └── resources/
-    │       └── application.yml
+    │       ├── application.yml
+    │       └── db/
+    │           └── migration/
     └── test/
 ```
 
@@ -410,7 +413,7 @@ O consumidor deve considerar idempotência para evitar processamento duplicado.
 
 ## Banco de dados
 
-Utilizar PostgreSQL com Spring Data JPA.
+Utilizar PostgreSQL com Spring Data JPA e Flyway.
 
 Entidades sugeridas:
 
@@ -421,13 +424,26 @@ Caregiver
 Booking
 ```
 
-Utilizar migrations, preferencialmente com:
+### Caminhos obrigatórios para artefatos de dados
 
 ```text
-Flyway
+services/api/src/main/resources/db/migration/   # migrations Flyway e seeds versionados
+infrastructure/database/                        # artefatos operacionais/de infraestrutura do PostgreSQL
+docs/database/                                  # modelagem, convenções e ownership dos dados
+docs/diagrams/                                  # DER e diagramas relacionados
+docs/adr/ADR-003-persistencia.md                # ADR de persistência
 ```
 
-ou ferramenta equivalente definida em ADR.
+Regras:
+
+- toda alteração de schema deve ser criada como migration Flyway em `services/api/src/main/resources/db/migration/`;
+- seeds controlados pelo projeto devem ser versionados no mesmo fluxo de migrations, quando aplicável;
+- não duplicar scripts de criação de schema em `infrastructure/database/`;
+- `infrastructure/database/` deve conter apenas artefatos necessários à execução/infraestrutura do PostgreSQL;
+- documentação de tabelas, relacionamentos, índices, constraints e ownership deve ser mantida em `docs/database/`;
+- o DER deve ser mantido em `docs/diagrams/`;
+- decisões arquiteturais de persistência devem ser registradas em `docs/adr/ADR-003-persistencia.md`;
+- alterações nesses caminhos devem permanecer consistentes com o README e com o C4.
 
 ## Testes
 
@@ -458,7 +474,7 @@ develop → main
 Os Pull Requests devem informar:
 
 - o que foi alterado;
-- Issue relacionada;
+- contexto ou motivação da alteração, quando necessário;
 - como testar;
 - evidências quando necessário;
 - possíveis impactos em outros módulos.
@@ -487,11 +503,12 @@ A `main` deve possuir proteção mais rígida por representar a versão estável
 Antes de implementar uma tarefa:
 
 1. leia este arquivo;
-2. consulte os ADRs relacionados;
+2. consulte os ADRs relacionados em `docs/adr/`;
 3. consulte os contratos existentes;
-4. confirme que está trabalhando em uma branch criada a partir de `develop`;
-5. preserve a arquitetura definida;
-6. altere somente o necessário para a tarefa.
+4. consulte a documentação da área — para banco de dados, `docs/database/`;
+5. confirme que está trabalhando em uma branch criada a partir de `develop`;
+6. preserve a arquitetura definida;
+7. altere somente o necessário para a tarefa.
 
 A IA nunca deve orientar alterações diretamente em `main`.
 
