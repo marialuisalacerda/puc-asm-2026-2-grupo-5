@@ -13,7 +13,7 @@ Grupo 05 · ASM 2026/2
 | Maria Luísa Lacerda | Banco de dados | 257115 |
 | Integrante 5 | Mensageria | — |
 | Integrante 6 | Docker e Observabilidade | — |
-| Integrante 7 | CI/CD e Qualidade | — |
+| Ana Carolina Magalhães | CI/CD e Qualidade | 191943 |
 
 ---
 
