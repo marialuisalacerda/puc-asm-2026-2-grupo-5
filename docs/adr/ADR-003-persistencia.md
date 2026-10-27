@@ -1,271 +1,95 @@
-# ADR-003 — Estratégia de Persistência
+# ADR-003 — Estratégia de persistência
 
 ## Status
 
 Proposto
 
+## Data
+
+2026-10-23
+
+## Responsável
+
+_(integrante 4: Banco de dados)_
+
+## Revisores
+
+_(a definir)_
+
 ## Contexto
 
-O sistema conecta tutores de pets a cuidadores e possui fluxos que exigem persistência de dados relacionados a tutores, pets, cuidadores e reservas.
+O PetAmparo conecta tutores de pets a cuidadores e precisa persistir dados de tutores, pets, cuidadores e reservas.
 
-A API principal será implementada em Java com Spring Boot e utilizará Spring Data JPA para acesso aos dados.
+A API principal será implementada em Java com Spring Boot.
 
 A solução precisa garantir:
 
-- integridade dos dados;
-- relacionamento consistente entre as entidades;
-- evolução controlada do schema;
-- reprodutibilidade do ambiente;
-- versionamento das alterações estruturais;
-- configuração externa de credenciais;
-- suporte a testes automatizados;
+- integridade dos dados e relacionamentos consistentes entre as entidades;
+- evolução controlada e versionada do schema;
+- reprodutibilidade do ambiente entre os integrantes;
 - separação clara de ownership dos dados.
 
-Também é necessário evitar que diferentes componentes da solução mantenham ou alterem o mesmo schema de forma independente.
+Também é necessário evitar que diferentes componentes mantenham ou alterem o mesmo schema de forma independente.
+
+## Opções consideradas
+
+### Banco de dados
+
+- **PostgreSQL**: relacional, transacional, integração madura com Spring Boot.
+- **MySQL**: relacional maduro e amplamente utilizado.
+- **SQLite**: configuração simples e baixo custo para ambiente local, mas pouco adequado a backend em containers, relacionamentos transacionais e um ambiente próximo de uma aplicação distribuída.
+
+> **Nota para o autor:** o motivo de rejeição do MySQL na versão original ("o projeto já definiu PostgreSQL como tecnologia principal") é circular, pois é justamente este ADR que define isso. Sugestão: trocar por critérios reais que diferenciem as opções, por exemplo:
+> - suporte a busca geográfica (PostGIS) para encontrar cuidadores por região;
+> - suporte a tipos JSON/JSONB para dados semiestruturados do perfil;
+> - familiaridade da equipe com cada banco.
+>
+> Cabe a você avaliar quais desses critérios realmente se aplicam ao projeto.
+
+### Evolução do schema
+
+- **Flyway**: migrations versionadas em SQL, integradas ao Spring Boot.
+- **Alterações manuais sem ferramenta de migration**: reduzem o trabalho inicial, mas dificultam rastreabilidade, reprodução do ambiente e integração entre integrantes.
 
 ## Decisão
 
-Será utilizado **PostgreSQL** como banco de dados relacional principal da aplicação.
-
-O acesso ao banco será realizado pela API Java/Spring Boot utilizando **Spring Data JPA**.
-
-As alterações estruturais do banco serão versionadas com **Flyway**.
-
-As migrations serão armazenadas em:
-
-```text
-services/api/src/main/resources/db/migration/
-```
-
-O diretório seguirá a convenção do Flyway, por exemplo:
-
-```text
-V1__create_initial_schema.sql
-V2__add_booking_indexes.sql
-V3__add_booking_constraints.sql
-```
-
-A documentação específica do banco será mantida em:
-
-```text
-docs/database/
-```
-
-O DER e demais diagramas relacionados ao modelo de dados serão mantidos em:
-
-```text
-docs/diagrams/
-```
-
-Artefatos de infraestrutura relacionados ao PostgreSQL poderão ser mantidos em:
-
-```text
-infrastructure/database/
-```
-
-Esse diretório não deverá conter cópias das migrations do Flyway.
-
-As migrations localizadas em `services/api/src/main/resources/db/migration/` serão a única fonte versionada de evolução do schema.
-
-## Ownership dos dados
-
-A API será responsável pela persistência dos dados do domínio principal.
-
-Outros componentes, como o `notification-worker`, não deverão acessar diretamente as tabelas da API.
-
-A comunicação entre componentes independentes deverá ocorrer por contratos definidos, como APIs ou eventos.
-
-Essa regra evita acoplamento direto ao schema e reduz dependências entre componentes.
-
-## Modelo inicial
-
-O modelo inicial deverá contemplar, no mínimo:
-
-```text
-Tutor
-  |
-  +---- Pet
-
-Tutor
-  |
-  +---- Booking
-          |
-          +---- Caregiver
-          |
-          +---- Pet
-```
-
-As entidades, atributos, cardinalidades, constraints e índices serão detalhados durante a etapa de modelagem e registrados na documentação do banco e no DER.
-
-## Migrations
-
-Toda alteração estrutural no banco deverá ser realizada por migration.
-
-Não deverão ser consideradas válidas alterações feitas manualmente diretamente no banco sem que exista uma migration correspondente no repositório.
-
-As migrations deverão:
-
-- possuir versionamento incremental;
-- ter nomes descritivos;
-- ser imutáveis após terem sido aplicadas e compartilhadas;
-- evitar operações destrutivas sem justificativa;
-- manter compatibilidade com a aplicação sempre que possível.
-
-## Seeds
-
-Dados iniciais poderão ser adicionados quando forem necessários para desenvolvimento ou demonstração.
-
-Seeds não deverão conter:
-
-- credenciais reais;
-- dados pessoais reais;
-- tokens;
-- informações sensíveis.
-
-Quando forem necessários dados específicos apenas para testes automatizados, eles deverão permanecer no contexto de testes e não nas migrations de produção.
-
-## Constraints
-
-O banco deverá utilizar constraints para proteger invariantes que pertençam à camada de persistência.
-
-Devem ser avaliadas, conforme o modelo:
-
-- `PRIMARY KEY`;
-- `FOREIGN KEY`;
-- `NOT NULL`;
-- `UNIQUE`;
-- `CHECK`.
-
-Regras puramente de negócio continuarão sendo responsabilidade da camada de domínio/aplicação.
-
-## Índices
-
-Índices deverão ser criados com base nos padrões reais de consulta da aplicação.
-
-Devem ser priorizados campos utilizados frequentemente em:
-
-- filtros;
-- relacionamentos;
-- buscas;
-- ordenações;
-- joins.
-
-Índices não deverão ser adicionados sem necessidade identificada, pois também aumentam custo de escrita e armazenamento.
-
-## Configuração
-
-Credenciais e strings de conexão não deverão ser versionadas no repositório.
-
-A configuração deverá utilizar variáveis de ambiente ou mecanismos equivalentes suportados pelo Spring Boot.
-
-Exemplos de informações externas à aplicação:
-
-```text
-DB_HOST
-DB_PORT
-DB_NAME
-DB_USERNAME
-DB_PASSWORD
-```
-
-Arquivos de exemplo poderão utilizar apenas valores fictícios ou locais.
-
-## Testes
-
-A estratégia de persistência deverá ser validada por testes automatizados.
-
-Os testes deverão verificar, quando aplicável:
-
-- inicialização do contexto Spring;
-- aplicação das migrations;
-- criação correta do schema;
-- persistência das entidades;
-- relacionamentos;
-- constraints;
-- consultas dos repositories;
-- comportamento diante de dados inválidos;
-- integração entre JPA e PostgreSQL.
-
-A implementação poderá utilizar:
-
-- JUnit;
-- Spring Boot Test;
-- testes de repository;
-- PostgreSQL em ambiente isolado de testes, preferencialmente por container quando essa infraestrutura estiver disponível.
-
-Os testes específicos serão definidos junto com a implementação das entidades e repositories.
-
-## Alternativas consideradas
-
-### MySQL
-
-Banco relacional maduro e amplamente utilizado.
-
-Não foi escolhido porque o projeto já definiu PostgreSQL como tecnologia principal e não existe requisito que justifique uma segunda tecnologia relacional.
-
-### SQLite
-
-Apresenta configuração simples e baixo custo para ambientes locais.
-
-Não foi escolhido como banco principal porque o projeto prevê execução de backend em containers, relacionamentos transacionais e um ambiente mais próximo de uma aplicação distribuída.
-
-### Alterações manuais sem ferramenta de migration
-
-Reduzem o trabalho inicial, porém dificultam rastreabilidade, reprodução do ambiente e integração entre integrantes.
-
-Por esse motivo, essa alternativa foi rejeitada.
+1. Usar **PostgreSQL** como banco de dados relacional principal.
+2. Acessar o banco pela API Java/Spring Boot com **Spring Data JPA**.
+3. Versionar as alterações estruturais com **Flyway**. As migrations do repositório são a única fonte de evolução do schema.
+4. **Ownership dos dados:** somente a API acessa o banco do domínio principal. Outros componentes, como o `notification-worker`, não acessam diretamente as tabelas da API e se comunicam com ela por contratos definidos (APIs ou eventos).
+
+As convenções de uso (estrutura de pastas, regras de migrations, seeds, constraints, índices, configuração e testes) estão no [Guia de persistência](../database/README.md).
 
 ## Consequências
 
 ### Positivas
 
-- schema versionado junto com o código;
-- histórico das alterações estruturais;
-- maior reprodutibilidade entre ambientes;
+- schema versionado junto com o código e com histórico das alterações;
+- maior reprodutibilidade entre ambientes e menor risco de divergência entre bancos locais;
 - integração natural com Spring Boot;
 - suporte a integridade referencial e transações;
-- facilidade de revisão das alterações por Pull Request;
-- menor risco de divergência entre bancos locais dos integrantes.
+- alterações de schema revisáveis por Pull Request;
+- menor acoplamento entre componentes, já que ninguém além da API depende do schema.
 
 ### Negativas
 
 - toda alteração estrutural exige uma nova migration;
-- migrations já compartilhadas não deverão ser alteradas;
-- mudanças incompatíveis exigirão planejamento de migração;
-- testes de integração com PostgreSQL possuem custo maior que testes puramente unitários.
+- migrations já compartilhadas não podem ser alteradas;
+- mudanças incompatíveis exigem planejamento de migração;
+- testes de integração com PostgreSQL custam mais que testes puramente unitários;
+- o `notification-worker` depende de eventos/contratos para obter dados, em vez de consultar o banco.
 
-## Estrutura relacionada
+## Impacto no C4
 
-```text
-services/api/
-└── src/
-    ├── main/
-    │   └── resources/
-    │       └── db/
-    │           └── migration/
-    └── test/
+- **C2 (Containers):** adicionar o container **Banco de dados (PostgreSQL)**.
+- Apenas o container **API** tem relação com o banco ("Lê e grava dados do domínio, via JPA").
+- O **notification-worker** não tem seta para o banco; ele recebe dados por eventos (ver ADR de mensageria).
+- **C3 da API:** os repositories (Spring Data JPA) são os componentes que acessam o banco.
 
-infrastructure/
-└── database/
+## Referências
 
-docs/
-├── adr/
-│   └── ADR-003-persistencia.md
-├── database/
-└── diagrams/
-```
-
-## Critérios de validação
-
-Esta decisão será considerada corretamente implementada quando:
-
-- PostgreSQL estiver configurado para o ambiente local;
-- Flyway estiver integrado à API;
-- migrations forem aplicadas automaticamente;
-- schema inicial estiver versionado;
-- DER estiver documentado;
-- constraints estiverem implementadas;
-- índices necessários estiverem documentados e versionados;
-- credenciais não estiverem armazenadas no Git;
-- testes de persistência estiverem passando;
-- a documentação em `docs/database/` estiver atualizada.
+- [Guia de persistência](../database/README.md)
+- DER: `docs/diagrams/`
+- [Documentação do Flyway](https://documentation.red-gate.com/flyway)
+- [Spring Data JPA](https://spring.io/projects/spring-data-jpa)
+- Michael Nygard, [Documenting Architecture Decisions](https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions)

@@ -7,7 +7,7 @@ Grupo 05 · ASM 2026/2
 
 | Integrante | Responsabilidade principal | Matrícula |
 |---|---|---|
-| Integrante 1 | Arquitetura e C4 | — |
+| Amir Gabriel Dantas Santos Andrade | Arquitetura e C4 | 1666035 |
 | Integrante 2 | Aplicativo Mobile | — |
 | Integrante 3 | Backend e domínio | — |
 | Maria Luísa Lacerda | Banco de dados | 257115 |
