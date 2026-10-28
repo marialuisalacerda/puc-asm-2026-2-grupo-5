@@ -12,7 +12,7 @@ Grupo 05 · ASM 2026/2
 | Integrante 3 | Backend e domínio | — |
 | Maria Luísa Lacerda | Banco de dados | 257115 |
 | Integrante 5 | Mensageria | — |
-| Integrante 6 | Docker e Observabilidade | — |
+| João Pedro Schlindwein | Docker e Observabilidade | — |
 | Ana Carolina Magalhães | CI/CD e Qualidade | 191943 |
 
 ---
@@ -376,6 +376,10 @@ Consumidores deverão considerar mensagens duplicadas e aplicar idempotência qu
 
 ## Observabilidade
 
+> Decisão: [ADR-005](docs/adr/ADR-005-observabilidade.md) · Guia: [infrastructure/observability](infrastructure/observability/README.md)
+>
+> OpenTelemetry Java Agent → OTel Collector → Prometheus (métricas), Jaeger (traces), Loki (logs) → Grafana.
+
 A solução deverá demonstrar os três pilares de observabilidade:
 
 ```text
@@ -444,6 +448,21 @@ docker compose up -d
 ```
 
 Sempre que possível, este comando deverá subir toda a infraestrutura necessária ao backend.
+
+> Decisão: [ADR-006](docs/adr/ADR-006-containerizacao.md) · Guia: [infrastructure/docker](infrastructure/docker/README.md)
+
+```bash
+cp .env.example .env
+docker compose up -d                  # PostgreSQL, RabbitMQ e observabilidade
+docker compose --profile app up -d    # + API e notification-worker
+```
+
+| Ferramenta | URL local |
+|---|---|
+| Grafana | http://localhost:3000 |
+| Prometheus | http://localhost:9090 |
+| Jaeger | http://localhost:16686 |
+| RabbitMQ | http://localhost:15672 |
 
 ---
 
