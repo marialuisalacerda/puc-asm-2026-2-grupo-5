@@ -137,7 +137,7 @@ Por esses motivos, essa alternativa foi descartada.
 10. Índices serão criados quando houver padrão de acesso justificável, especialmente para relacionamentos e consultas efetivamente utilizadas. Índices não serão adicionados apenas por antecipação.
 11. Credenciais e strings de conexão reais não serão armazenadas no repositório. Configurações sensíveis serão fornecidas por variáveis de ambiente.
 
-As convenções operacionais estão documentadas no [Guia de persistência](../database/README.MD).
+As convenções operacionais estão documentadas no [Guia de persistência](../database/README.md).
 
 ## Consequências
 
@@ -232,7 +232,7 @@ Os atributos, cardinalidades, constraints e índices serão detalhados no modelo
 
 ## Referências
 
-- [Guia de persistência](../database/README.MD)
+- [Guia de persistência](../database/README.md)
 - [`docs/diagrams/`] — DER e diagramas do modelo de dados
 - ADR-001 — Estilo arquitetural do backend
 - Documentação do Flyway
