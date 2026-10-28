@@ -1,0 +1,58 @@
+spring:
+  application:
+    name: api
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:plantao_pet}
+    username: ${DB_USERNAME:plantao_pet}
+    password: ${DB_PASSWORD:plantao_pet_local}
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  # SPRING_RABBITMQ_HOST / _PORT / _USERNAME / _PASSWORD sobrescrevem estes defaults locais
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: plantao_pet
+    password: plantao_pet_local
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    time-zone: UTC
+
+server:
+  port: ${SERVER_PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+plantaopet:
+  cors:
+    # Expo web (Metro) em dev; sobrescreva com CORS_ALLOWED_ORIGINS (lista separada por vírgula)
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:8081,http://localhost:19006}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
