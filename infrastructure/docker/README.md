@@ -7,7 +7,8 @@ Decisão registrada no [ADR-006](../../docs/adr/ADR-006-containerizacao.md).
 ```bash
 cp .env.example .env                  # ajuste portas/credenciais locais se quiser
 docker compose up -d                  # PostgreSQL, RabbitMQ e observabilidade
-docker compose --profile app up -d    # + API e notification-worker (requer pom.xml nos serviços)
+docker compose --profile app up -d    # + API e notification-worker
+./scripts/smoke-test.sh               # fluxo de ponta a ponta
 docker compose ps
 docker compose down                   # -v para apagar volumes
 ```
@@ -17,8 +18,9 @@ docker compose down                   # -v para apagar volumes
 | Serviço | URL / porta local | Observação |
 |---|---|---|
 | API | http://localhost:8080 | profile `app` |
-| notification-worker | — | profile `app`; sem acesso ao banco (ADR-003) |
-| PostgreSQL | localhost:5432 | credenciais em `.env` |
+| notification-worker | http://localhost:8082 | profile `app`; `GET /notifications` |
+| PostgreSQL (API) | localhost:5432 | credenciais em `.env` |
+| PostgreSQL (worker) | — (só na rede interna) | `notification-db`, banco próprio do worker (ADR-003) |
 | RabbitMQ | localhost:5672 · http://localhost:15672 | painel de gestão |
 | Grafana | http://localhost:3000 | `admin`/`admin` (local) |
 | Prometheus | http://localhost:9090 | alvos em `/targets` |
@@ -62,6 +64,6 @@ docker build -f infrastructure/docker/java-service.dockerfile -t plantao-pet/api
 
 ## RabbitMQ
 
-`rabbitmq/enabled_plugins` habilita `rabbitmq_management` e `rabbitmq_prometheus`
+`rabbitmq/enabled_plugins` habilita `rabbitmq_management`, `rabbitmq_prometheus` e o shovel (reprocessar a DLQ pelo painel)
 (métricas em `:15692`). Filas, exchanges e bindings são responsabilidade da mensageria
 (`infrastructure/messaging/`).

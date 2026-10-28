@@ -9,7 +9,7 @@
   "version": 1,
   "refresh": "10s",
   "time": {
-    "from": "now-30m",
+    "from": "now-15m",
     "to": "now"
   },
   "panels": [
@@ -98,7 +98,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(rate(http_server_request_duration_seconds_count{job=\"api\",http_response_status_code=~\"5..\"}[5m])) / sum(rate(http_server_request_duration_seconds_count{job=\"api\"}[5m]))",
+          "expr": "(sum(rate(http_server_request_duration_seconds_count{job=\"api\",http_response_status_code=~\"5..\"}[5m])) or vector(0)) / sum(rate(http_server_request_duration_seconds_count{job=\"api\"}[5m]))",
           "legendFormat": "erro"
         }
       ],
@@ -460,7 +460,7 @@
     {
       "id": 13,
       "type": "timeseries",
-      "title": "Mensagens aguardando na fila",
+      "title": "Mensagens aguardando por fila",
       "description": "",
       "datasource": {
         "type": "prometheus",
@@ -486,25 +486,16 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum by (queue) (rabbitmq_queue_messages_ready)",
+          "expr": "sum by (queue) (rabbitmq_detailed_queue_messages_ready)",
           "legendFormat": "{{queue}}"
-        },
-        {
-          "refId": "B",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "sum(rabbitmq_queue_messages_ready)",
-          "legendFormat": "total"
         }
       ]
     },
     {
       "id": 14,
-      "type": "timeseries",
-      "title": "Processamento no worker",
-      "description": "",
+      "type": "stat",
+      "title": "Dead-letter queue",
+      "description": "Mensagens que falharam após as retentativas",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -529,8 +520,51 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(rate(message_processing_total[1m]))",
-          "legendFormat": "processadas/s"
+          "expr": "sum(rabbitmq_detailed_queue_messages_ready{queue=\"notification.booking-events.dlq\"}) or vector(0)",
+          "legendFormat": "na DLQ"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "area"
+      }
+    },
+    {
+      "id": 15,
+      "type": "timeseries",
+      "title": "Processamento no worker por resultado",
+      "description": "processed = novo, duplicate = descartado pela idempotência",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 32,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "sem dados"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (outcome) (rate(message_processing_total[1m]))",
+          "legendFormat": "{{outcome}}"
         },
         {
           "refId": "B",
@@ -539,25 +573,59 @@
             "uid": "prometheus"
           },
           "expr": "sum(rate(message_processing_errors_total[1m]))",
-          "legendFormat": "falhas/s"
+          "legendFormat": "erros"
         }
       ]
     },
     {
-      "id": 15,
+      "id": 16,
+      "type": "timeseries",
+      "title": "Eventos processados por tipo",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 32,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "sem dados"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (event_type) (message_processing_total{outcome=\"processed\"})",
+          "legendFormat": "{{event_type}}"
+        }
+      ]
+    },
+    {
+      "id": 17,
       "type": "row",
       "title": "Infraestrutura",
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 32,
+        "y": 40,
         "w": 24,
         "h": 1
       },
       "panels": []
     },
     {
-      "id": 16,
+      "id": 18,
       "type": "timeseries",
       "title": "JVM heap usado",
       "description": "",
@@ -567,7 +635,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 33,
+        "y": 41,
         "w": 8,
         "h": 8
       },
@@ -591,17 +659,17 @@
       ]
     },
     {
-      "id": 17,
+      "id": 19,
       "type": "timeseries",
-      "title": "PostgreSQL · conexões ativas",
-      "description": "",
+      "title": "PostgreSQL · conexões por banco",
+      "description": "postgres = banco da API · postgres-notifications = banco do worker",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
       "gridPos": {
         "x": 8,
-        "y": 33,
+        "y": 41,
         "w": 8,
         "h": 8
       },
@@ -619,8 +687,8 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(pg_stat_database_numbackends)",
-          "legendFormat": "conexões"
+          "expr": "sum by (job) (pg_stat_database_numbackends{datname!~\"template.*|postgres\"})",
+          "legendFormat": "{{job}}"
         },
         {
           "refId": "B",
@@ -629,12 +697,12 @@
             "uid": "prometheus"
           },
           "expr": "pg_up",
-          "legendFormat": "pg_up"
+          "legendFormat": "pg_up {{job}}"
         }
       ]
     },
     {
-      "id": 18,
+      "id": 20,
       "type": "timeseries",
       "title": "Disponibilidade dos alvos",
       "description": "",
@@ -644,7 +712,7 @@
       },
       "gridPos": {
         "x": 16,
-        "y": 33,
+        "y": 41,
         "w": 8,
         "h": 8
       },
