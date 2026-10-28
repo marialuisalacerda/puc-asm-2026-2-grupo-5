@@ -1,0 +1,212 @@
+# ============================================================
+# ASM 2026/2 - Grupo 05 · Plantão de Pet
+# Ambiente local completo (ADR-006 containerização, ADR-005 observabilidade)
+#
+#   cp .env.example .env
+#   docker compose up -d                  # infraestrutura + observabilidade
+#   docker compose --profile app up -d    # + API e notification-worker
+# ============================================================
+
+name: plantao-pet
+
+x-java-service: &java-service
+  restart: unless-stopped
+  networks: [backend]
+  depends_on:
+    postgres:
+      condition: service_healthy
+    rabbitmq:
+      condition: service_healthy
+    otel-collector:
+      condition: service_started
+
+x-otel-env: &otel-env
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+  OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+  OTEL_TRACES_EXPORTER: otlp
+  OTEL_METRICS_EXPORTER: otlp
+  OTEL_LOGS_EXPORTER: otlp
+  OTEL_METRIC_EXPORT_INTERVAL: "10000"
+  OTEL_RESOURCE_ATTRIBUTES: deployment.environment=local
+  # ponte Micrometer -> OTel: métricas de negócio (booking.created etc.), ADR-005
+  OTEL_INSTRUMENTATION_MICROMETER_ENABLED: "true"
+
+services:
+
+  # ----------------------------------------------------------
+  # Aplicação (profile "app": sobe quando os projetos Maven existirem)
+  # ----------------------------------------------------------
+
+  api:
+    <<: *java-service
+    profiles: [app]
+    build:
+      context: ./services/api
+      dockerfile: ../../infrastructure/docker/java-service.dockerfile
+    image: plantao-pet/api:local
+    ports:
+      - "${API_PORT:-8080}:8080"
+    environment:
+      <<: *otel-env
+      OTEL_SERVICE_NAME: api
+      SERVER_PORT: "8080"
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: ${DB_NAME:-plantao_pet}
+      DB_USERNAME: ${DB_USERNAME:-plantao_pet}
+      DB_PASSWORD: ${DB_PASSWORD:-plantao_pet_local}
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: "5672"
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-plantao_pet}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-plantao_pet_local}
+
+  notification-worker:
+    <<: *java-service
+    profiles: [app]
+    build:
+      context: ./services/notification-worker
+      dockerfile: ../../infrastructure/docker/java-service.dockerfile
+    image: plantao-pet/notification-worker:local
+    environment:
+      <<: *otel-env
+      OTEL_SERVICE_NAME: notification-worker
+      SERVER_PORT: "8081"
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: "5672"
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-plantao_pet}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-plantao_pet_local}
+    # sem acesso ao PostgreSQL: ownership dos dados é da API (ADR-003)
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
+
+  # ----------------------------------------------------------
+  # Dados e mensageria
+  # ----------------------------------------------------------
+
+  postgres:
+    image: postgres:16.4-alpine
+    restart: unless-stopped
+    networks: [backend]
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    environment:
+      POSTGRES_DB: ${DB_NAME:-plantao_pet}
+      POSTGRES_USER: ${DB_USERNAME:-plantao_pet}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-plantao_pet_local}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3.13.7-management-alpine
+    restart: unless-stopped
+    networks: [backend]
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-plantao_pet}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-plantao_pet_local}
+    volumes:
+      - ./infrastructure/docker/rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins:ro
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+  # ----------------------------------------------------------
+  # Observabilidade: OTel Collector -> Prometheus / Jaeger / Loki -> Grafana
+  # ----------------------------------------------------------
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.111.0
+    restart: unless-stopped
+    networks: [backend]
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./infrastructure/observability/otel-collector/config.yaml:/etc/otelcol/config.yaml:ro
+    ports:
+      - "${OTLP_GRPC_PORT:-4317}:4317"   # OTLP gRPC
+      - "${OTLP_HTTP_PORT:-4318}:4318"   # OTLP HTTP
+    depends_on: [jaeger, loki]
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    restart: unless-stopped
+    networks: [backend]
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=7d
+      - --web.enable-lifecycle
+    volumes:
+      - ./infrastructure/observability/prometheus:/etc/prometheus:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    restart: unless-stopped
+    networks: [backend]
+    environment:
+      DATA_SOURCE_URI: postgres:5432/${DB_NAME:-plantao_pet}?sslmode=disable
+      DATA_SOURCE_USER: ${DB_USERNAME:-plantao_pet}
+      DATA_SOURCE_PASS: ${DB_PASSWORD:-plantao_pet_local}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.60.0
+    restart: unless-stopped
+    networks: [backend]
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "${JAEGER_PORT:-16686}:16686"
+
+  loki:
+    image: grafana/loki:3.1.1
+    restart: unless-stopped
+    networks: [backend]
+    command: ["-config.file=/etc/loki/config.yaml"]
+    volumes:
+      - ./infrastructure/observability/loki/config.yaml:/etc/loki/config.yaml:ro
+      - loki-data:/loki
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    restart: unless-stopped
+    networks: [backend]
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/plantao-pet-overview.json
+    volumes:
+      - ./infrastructure/observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infrastructure/observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    depends_on: [prometheus, loki, jaeger]
+
+networks:
+  backend:
+
+volumes:
+  postgres-data:
+  rabbitmq-data:
+  prometheus-data:
+  loki-data:
+  grafana-data:
