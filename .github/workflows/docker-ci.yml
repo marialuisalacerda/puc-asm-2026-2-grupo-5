@@ -1,0 +1,48 @@
+name: docker-ci
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: docker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Cada Dockerfile é construído a partir da própria pasta; sem Dockerfiles, nada é feito (ADR-007)
+      - name: Build Dockerfiles
+        run: |
+          files=$(git ls-files '*Dockerfile' '*Dockerfile.*')
+          if [ -z "$files" ]; then
+            echo "::notice::Nenhum Dockerfile encontrado, build ignorado."
+            exit 0
+          fi
+          for f in $files; do
+            echo "::group::docker build $f"
+            docker build -f "$f" "$(dirname "$f")"
+            echo "::endgroup::"
+          done
+
+      - name: Validate Docker Compose
+        run: |
+          if [ ! -f docker-compose.yml ]; then
+            echo "::notice::docker-compose.yml não encontrado, validação ignorada."
+            exit 0
+          fi
+          # Variáveis vêm de .env, que não é versionado; usa .env.example quando existir
+          if [ -f .env.example ]; then
+            docker compose --env-file .env.example config --quiet
+          else
+            docker compose config --quiet
+          fi
