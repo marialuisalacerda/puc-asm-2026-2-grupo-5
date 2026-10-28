@@ -1,0 +1,45 @@
+groups:
+  - name: plantao-pet
+    rules:
+      - alert: TargetDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Alvo {{ $labels.job }} ({{ $labels.instance }}) indisponível"
+
+      - alert: ApiHighErrorRate
+        expr: |
+          sum(rate(http_server_request_duration_seconds_count{job="api", http_response_status_code=~"5.."}[5m]))
+            / sum(rate(http_server_request_duration_seconds_count{job="api"}[5m])) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "API com taxa de erro 5xx acima de 5%"
+
+      - alert: ApiHighLatencyP95
+        expr: |
+          histogram_quantile(0.95, sum by (le) (rate(http_server_request_duration_seconds_bucket{job="api"}[5m]))) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "p95 de latência da API acima de 1s"
+
+      - alert: MessageProcessingErrors
+        expr: sum(rate(message_processing_errors_total[5m])) > 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "notification-worker registrando falhas no processamento de mensagens"
+
+      - alert: RabbitMqQueueBacklog
+        expr: sum(rabbitmq_queue_messages_ready) > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Mais de 100 mensagens aguardando consumo no RabbitMQ"
