@@ -16,43 +16,36 @@ A estratégia de persistência deverá:
 - manter separadas as configurações dos diferentes ambientes;
 - evitar armazenamento de credenciais no repositório.
 
-## Estrutura planejada
-
-A implementação do banco deverá contemplar:
-
-- modelo conceitual;
-- modelo lógico;
-- modelo físico;
-- migrations;
-- configuração de ambiente local;
-- dados iniciais quando necessários;
-- testes de integração;
-- documentação das entidades e relacionamentos.
-
-## Estrutura de pastas
+## Estrutura
 
 ```text
 services/api/
 └── src/
-    ├── main/
-    │   └── resources/
-    │       └── db/
-    │           └── migration/      # migrations do Flyway (única fonte do schema)
-    └── test/
+    └── main/
+        └── resources/
+            └── db/
+                └── migration/      # migrations do Flyway; única fonte do schema
 
 infrastructure/
-└── database/                       # artefatos de infra do PostgreSQL (sem cópias de migrations)
+└── database/
+    ├── docker-compose.yml          # PostgreSQL local enquanto o compose global não estiver integrado
+    ├── .env.example
+    └── tests/                      # testes isolados de schema/migrations
 
 docs/
 ├── adr/
 │   └── ADR-003-persistencia.md
-├── database/                       # este documento e demais docs do banco
-└── diagrams/                       # DER e diagramas do modelo de dados
+├── database/
+│   ├── README.MD
+│   ├── modelo-logico-inicial.md
+│   └── REVISAO-PACOTE-BANCO.md
+└── diagrams/
+    └── DER-inicial.md
 ```
 
 ## Modelo inicial
 
-O modelo inicial deverá contemplar, no mínimo:
+O modelo inicial contempla:
 
 ```text
 Tutor
@@ -68,7 +61,9 @@ Tutor
           +---- Pet
 ```
 
-Entidades, atributos, cardinalidades, constraints e índices serão detalhados durante a modelagem e registrados no DER (`docs/diagrams/`).
+A proposta detalhada de atributos, cardinalidades, constraints e índices está em [modelo-logico-inicial.md](modelo-logico-inicial.md), e o DER está em [DER-inicial.md](../diagrams/DER-inicial.md).
+
+Enquanto os contratos definitivos da API ainda estiverem em revisão, o modelo lógico deve ser tratado como proposta e validado com o responsável pelo backend antes de alterações incompatíveis.
 
 ## Versionamento
 
@@ -80,8 +75,7 @@ As migrations ficam em `services/api/src/main/resources/db/migration/` e seguem 
 
 ```text
 V1__create_initial_schema.sql
-V2__add_booking_indexes.sql
-V3__add_booking_constraints.sql
+V2__add_relationship_indexes.sql
 ```
 
 As migrations deverão:
@@ -104,11 +98,11 @@ Dados necessários apenas para testes automatizados deverão permanecer no conte
 
 O banco deverá utilizar constraints para proteger invariantes que pertençam à camada de persistência. Devem ser avaliadas, conforme o modelo:
 
-- `PRIMARY KEY`
-- `FOREIGN KEY`
-- `NOT NULL`
-- `UNIQUE`
-- `CHECK`
+- `PRIMARY KEY`;
+- `FOREIGN KEY`;
+- `NOT NULL`;
+- `UNIQUE`;
+- `CHECK`.
 
 Regras puramente de negócio continuarão sendo responsabilidade da camada de domínio/aplicação.
 
@@ -116,7 +110,7 @@ Regras puramente de negócio continuarão sendo responsabilidade da camada de do
 
 Índices deverão ser criados com base nos padrões reais de consulta, priorizando campos usados com frequência em filtros, relacionamentos, buscas, ordenações e joins.
 
-Índices não deverão ser adicionados sem necessidade identificada, pois aumentam o custo de escrita e armazenamento.
+A migration `V2__add_relationship_indexes.sql` adiciona apenas índices das colunas de relacionamento inicialmente definidas. Índices adicionais deverão ser justificados pelos contratos e consultas implementados.
 
 ## Ambientes
 
@@ -140,33 +134,59 @@ DB_USERNAME
 DB_PASSWORD
 ```
 
-Arquivos de exemplo poderão utilizar apenas valores fictícios ou locais.
+O arquivo `infrastructure/database/.env.example` contém somente valores locais/fictícios.
+
+## Ambiente PostgreSQL local
+
+Enquanto o Docker Compose global do projeto não estiver integrado, o banco pode ser iniciado isoladamente:
+
+```bash
+docker compose -f infrastructure/database/docker-compose.yml up -d
+```
+
+Este compose deverá posteriormente ser integrado ao compose raiz pelo responsável de infraestrutura, evitando configurações duplicadas.
 
 ## Testes
 
-Os testes de persistência deverão verificar, quando aplicável:
+A suíte independente em `infrastructure/database/tests/` valida as migrations reais em um PostgreSQL temporário criado com Testcontainers.
 
-- inicialização do contexto Spring;
-- aplicação das migrations e criação correta do schema;
-- persistência das entidades e relacionamentos;
-- constraints e comportamento diante de dados inválidos;
-- consultas dos repositories;
-- integração entre JPA e PostgreSQL.
+Executar, a partir da raiz do repositório:
 
-Ferramentas: JUnit, Spring Boot Test, testes de repository e PostgreSQL isolado para testes, preferencialmente por container quando essa infraestrutura estiver disponível.
+```bash
+mvn -f infrastructure/database/tests/pom.xml test
+```
 
-Os testes específicos serão definidos junto com a implementação das entidades e repositories.
+Pré-requisitos:
+
+- Java 17+;
+- Maven 3.9+;
+- Docker em execução.
+
+Os testes cobrem:
+
+- aplicação das migrations;
+- criação do schema;
+- foreign keys;
+- constraints de unicidade;
+- constraints `CHECK`;
+- política de exclusão atualmente definida;
+- índices estruturais.
+
+Quando a API Spring Boot estiver implementada, deverão ser adicionados também testes de repository e integração JPA/PostgreSQL no módulo da API.
 
 ## Checklist de implementação
 
 A estratégia de persistência estará implementada quando:
 
-- [ ] PostgreSQL estiver configurado para o ambiente local;
-- [ ] Flyway estiver integrado à API e as migrations forem aplicadas automaticamente;
-- [ ] o schema inicial estiver versionado;
-- [ ] o DER estiver documentado;
-- [ ] as constraints estiverem implementadas;
-- [ ] os índices necessários estiverem documentados e versionados;
-- [ ] não houver credenciais armazenadas no Git;
-- [ ] os testes de persistência estiverem passando;
-- [ ] esta documentação estiver atualizada.
+- [x] PostgreSQL possuir configuração isolada para desenvolvimento local;
+- [ ] PostgreSQL estiver integrado ao Docker Compose global;
+- [ ] Flyway estiver integrado à API Spring Boot e as migrations forem aplicadas automaticamente pela aplicação;
+- [x] schema inicial estiver versionado em migrations;
+- [x] DER inicial estiver documentado;
+- [x] constraints estruturais iniciais estiverem implementadas;
+- [x] índices iniciais de relacionamento estiverem documentados e versionados;
+- [x] nenhuma credencial real estiver armazenada no Git;
+- [x] testes independentes de schema/migrations estiverem disponíveis;
+- [ ] testes JPA/repository estiverem passando após implementação do backend;
+- [ ] ADR-003 estiver revisado e aceito;
+- [ ] modelo lógico estiver validado com o backend.
