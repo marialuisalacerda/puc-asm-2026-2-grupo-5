@@ -17,6 +17,29 @@ Grupo 05 · ASM 2026/2
 
 ---
 
+## Como executar
+
+Pré-requisito: Docker Desktop. Java 21 e Node 20 só para desenvolver fora dos containers.
+
+```bash
+cp .env.example .env
+docker compose --profile app up -d --build   # API, worker, bancos, RabbitMQ e observabilidade
+./scripts/smoke-test.sh                      # fluxo de ponta a ponta: reserva → evento → notificação
+```
+
+| O quê | Onde |
+|---|---|
+| API (Swagger) | http://localhost:8080/swagger-ui.html |
+| notification-worker | http://localhost:8082/notifications |
+| Grafana | http://localhost:3000 (admin/admin) |
+| Jaeger | http://localhost:16686 |
+| RabbitMQ | http://localhost:15672 |
+| Mobile | `cd apps/mobile && npm install && npx expo start` ([guia](apps/mobile/README.md)) |
+
+Contratos: [OpenAPI](docs/api/openapi.yaml) · [eventos](docs/api/eventos.md) · [integração](docs/architecture/contratos-integracao.md)
+
+---
+
 ## Domínio
 
 O sistema tem como objetivo conectar tutores de pets a cuidadores que possam auxiliar em diferentes tipos de serviços, como:
@@ -468,6 +491,8 @@ docker compose --profile app up -d    # + API e notification-worker
 
 ## Modelagem C4
 
+> Modelos em Mermaid: [docs/c4](docs/c4/README.md) · Visão geral: [docs/architecture/visao-geral.md](docs/architecture/visao-geral.md)
+
 O C4 deverá ser iniciado antes da implementação e atualizado conforme a arquitetura evoluir.
 
 Serão priorizados:
@@ -543,17 +568,18 @@ ADR
 Implementação
 ```
 
-Exemplos de ADRs previstos:
+ADRs registrados:
 
-```text
-ADR-001-stack-mobile.md
-ADR-002-arquitetura-backend.md
-ADR-003-persistencia.md
-ADR-004-mensageria.md
-ADR-005-observabilidade.md
-ADR-006-containerizacao.md
-ADR-007-ci-cd.md
-```
+| ADR | Decisão |
+|---|---|
+| [ADR-000](docs/adr/ADR-000-layout.md) | Template dos ADRs |
+| [ADR-001](docs/adr/ADR-001-estilo-arquitetural-backend.md) | Monolito modular no backend |
+| [ADR-002](docs/adr/ADR-002-stack-mobile.md) | Stack mobile: React Native + Expo + TypeScript |
+| [ADR-003](docs/adr/ADR-003-persistencia.md) | PostgreSQL + JPA + Flyway; ownership dos dados |
+| [ADR-004](docs/adr/ADR-004-mensageria.md) | RabbitMQ, eventos, retry, DLQ e idempotência |
+| [ADR-005](docs/adr/ADR-005-observabilidade.md) | OpenTelemetry, Prometheus, Jaeger, Loki e Grafana |
+| [ADR-006](docs/adr/ADR-006-containerizacao.md) | Docker e Docker Compose |
+| [ADR-007](docs/adr/ADR-007-ci-cd.md) | CI com GitHub Actions |
 
 Os ADRs deverão ficar em:
 
@@ -579,6 +605,8 @@ Os diagramas deverão ficar em:
 ```text
 docs/diagrams/
 ```
+
+Disponíveis: [DER](docs/diagrams/DER-inicial.md) · [sequência da reserva](docs/diagrams/sequencia-reserva.md) · [estados da reserva](docs/diagrams/estados-reserva.md) · [mensageria](docs/diagrams/mensageria.md) · [deployment](docs/diagrams/deployment.md)
 
 ---
 
