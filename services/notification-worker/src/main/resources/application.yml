@@ -1,0 +1,64 @@
+# notification-worker - configuração local. Valores de produção/Compose vêm de variáveis de ambiente.
+# Contrato: docs/architecture/contratos-integracao.md e docs/api/eventos.md
+server:
+  port: ${SERVER_PORT:8081}
+
+spring:
+  application:
+    name: notification-worker
+
+  # Banco PRÓPRIO do worker (database "notifications"). Nunca aponta para o banco da API (ADR-003).
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:notifications}
+    username: ${DB_USERNAME:notifications}
+    password: ${DB_PASSWORD:notifications_local}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  # Conexão via SPRING_RABBITMQ_HOST / _PORT / _USERNAME / _PASSWORD (binding relaxado do Spring Boot).
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    listener:
+      simple:
+        acknowledge-mode: auto
+        # rejeição nunca volta para a fila: vai para a DLX/DLQ
+        default-requeue-rejected: false
+        prefetch: 10
+        retry:
+          # 3 tentativas no total com backoff exponencial 1s, 2s (docs/api/eventos.md)
+          enabled: true
+          max-attempts: 3
+          initial-interval: 1s
+          multiplier: 2
+          max-interval: 10s
+          stateless: true
+
+notification:
+  messaging:
+    exchange: booking.events
+    queue: notification.booking-events
+    binding-key: "booking.*"
+    dead-letter-exchange: booking.events.dlx
+    dead-letter-queue: notification.booking-events.dlq
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+logging:
+  level:
+    br.pucminas.plantaopet.notification: INFO
