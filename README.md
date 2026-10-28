@@ -12,7 +12,7 @@ Grupo 05 · ASM 2026/2
 | Integrante 3 | Backend e domínio | — |
 | Maria Luísa Lacerda | Banco de dados | 257115 |
 | Integrante 5 | Mensageria | — |
-| João Pedro Schlindwein | Docker e Observabilidade | — |
+| João Pedro Schlindwein | Docker e Observabilidade | 255485 |
 | Ana Carolina Magalhães | CI/CD e Qualidade | 191943 |
 
 ---
