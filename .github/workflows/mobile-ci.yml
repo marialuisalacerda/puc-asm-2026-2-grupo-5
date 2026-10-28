@@ -1,0 +1,59 @@
+name: mobile-ci
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: mobile
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      # Pula a validação enquanto o projeto Expo não existir (ADR-007)
+      - name: Check Node project
+        id: project
+        working-directory: .
+        run: |
+          if [ -f apps/mobile/package.json ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::apps/mobile/package.json não encontrado, validação ignorada."
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.project.outputs.exists == 'true'
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+
+      - name: Install dependencies
+        if: steps.project.outputs.exists == 'true'
+        run: npm ci
+
+      - name: Type check
+        if: steps.project.outputs.exists == 'true' && hashFiles('apps/mobile/tsconfig.json') != ''
+        run: npx tsc --noEmit
+
+      - name: Lint
+        if: steps.project.outputs.exists == 'true'
+        run: npm run lint --if-present
+
+      - name: Test
+        if: steps.project.outputs.exists == 'true'
+        run: npm test --if-present -- --ci
