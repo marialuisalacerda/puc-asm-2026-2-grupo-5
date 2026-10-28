@@ -75,8 +75,17 @@ services:
       SPRING_RABBITMQ_PORT: "5672"
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-plantao_pet}
       SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-plantao_pet_local}
-    # sem acesso ao PostgreSQL: ownership dos dados é da API (ADR-003)
+      # banco próprio do worker (idempotência e notificações); nunca o banco da API (ADR-003)
+      DB_HOST: notification-db
+      DB_PORT: "5432"
+      DB_NAME: ${NOTIFICATION_DB_NAME:-notifications}
+      DB_USERNAME: ${NOTIFICATION_DB_USERNAME:-notifications}
+      DB_PASSWORD: ${NOTIFICATION_DB_PASSWORD:-notifications_local}
+    ports:
+      - "${WORKER_PORT:-8082}:8081"
     depends_on:
+      notification-db:
+        condition: service_healthy
       rabbitmq:
         condition: service_healthy
       otel-collector:
@@ -98,6 +107,22 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-plantao_pet_local}
     volumes:
       - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  notification-db:
+    image: postgres:16.4-alpine
+    restart: unless-stopped
+    networks: [backend]
+    environment:
+      POSTGRES_DB: ${NOTIFICATION_DB_NAME:-notifications}
+      POSTGRES_USER: ${NOTIFICATION_DB_USERNAME:-notifications}
+      POSTGRES_PASSWORD: ${NOTIFICATION_DB_PASSWORD:-notifications_local}
+    volumes:
+      - notification-db-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
@@ -165,6 +190,18 @@ services:
       postgres:
         condition: service_healthy
 
+  notification-db-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    restart: unless-stopped
+    networks: [backend]
+    environment:
+      DATA_SOURCE_URI: notification-db:5432/${NOTIFICATION_DB_NAME:-notifications}?sslmode=disable
+      DATA_SOURCE_USER: ${NOTIFICATION_DB_USERNAME:-notifications}
+      DATA_SOURCE_PASS: ${NOTIFICATION_DB_PASSWORD:-notifications_local}
+    depends_on:
+      notification-db:
+        condition: service_healthy
+
   jaeger:
     image: jaegertracing/all-in-one:1.60.0
     restart: unless-stopped
@@ -192,6 +229,7 @@ services:
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
       GF_AUTH_ANONYMOUS_ENABLED: "true"
       GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_USERS_VIEWERS_CAN_EDIT: "true"   # libera o Explore (logs/traces) no acesso anônimo local
       GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/plantao-pet-overview.json
     volumes:
       - ./infrastructure/observability/grafana/provisioning:/etc/grafana/provisioning:ro
@@ -206,6 +244,7 @@ networks:
 
 volumes:
   postgres-data:
+  notification-db-data:
   rabbitmq-data:
   prometheus-data:
   loki-data:

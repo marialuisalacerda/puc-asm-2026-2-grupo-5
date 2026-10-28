@@ -1,0 +1,390 @@
+openapi: 3.0.3
+info:
+  title: Plantão de Pet API
+  version: 1.0.0
+  description: |
+    Contrato REST entre o aplicativo mobile e a API (Spring Boot).
+    Fonte da verdade para mobile e backend: alterações incompatíveis exigem nova versão.
+    Erros seguem RFC 7807 (application/problem+json).
+servers:
+  - url: http://localhost:8080
+    description: Ambiente local (docker compose --profile app)
+
+tags:
+  - name: tutors
+  - name: pets
+  - name: caregivers
+  - name: bookings
+
+paths:
+  /tutors:
+    get:
+      tags: [tutors]
+      summary: Lista tutores
+      operationId: listTutors
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Tutor" } }
+    post:
+      tags: [tutors]
+      summary: Cadastra tutor
+      operationId: createTutor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateTutorRequest" }
+      responses:
+        "201":
+          description: Criado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Tutor" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /tutors/{tutorId}:
+    get:
+      tags: [tutors]
+      operationId: getTutor
+      parameters: [{ $ref: "#/components/parameters/TutorId" }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Tutor" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /tutors/{tutorId}/pets:
+    get:
+      tags: [pets]
+      summary: Lista os pets de um tutor
+      operationId: listTutorPets
+      parameters: [{ $ref: "#/components/parameters/TutorId" }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Pet" } }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /pets:
+    post:
+      tags: [pets]
+      summary: Cadastra pet
+      operationId: createPet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreatePetRequest" }
+      responses:
+        "201":
+          description: Criado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Pet" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /pets/{petId}:
+    get:
+      tags: [pets]
+      operationId: getPet
+      parameters:
+        - { name: petId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Pet" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /caregivers:
+    get:
+      tags: [caregivers]
+      summary: Lista cuidadores (por padrão só os ativos)
+      operationId: listCaregivers
+      parameters:
+        - { name: active, in: query, required: false, schema: { type: boolean, default: true } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Caregiver" } }
+
+  /caregivers/{caregiverId}:
+    get:
+      tags: [caregivers]
+      operationId: getCaregiver
+      parameters:
+        - { name: caregiverId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Caregiver" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /bookings/quote:
+    get:
+      tags: [bookings]
+      summary: Calcula o preço de um serviço (Strategy por tipo de serviço)
+      operationId: quoteBooking
+      parameters:
+        - { name: serviceType, in: query, required: true, schema: { $ref: "#/components/schemas/ServiceType" } }
+        - { name: scheduledStart, in: query, required: true, schema: { type: string, format: date-time } }
+        - { name: scheduledEnd, in: query, required: true, schema: { type: string, format: date-time } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PriceQuote" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+
+  /bookings:
+    post:
+      tags: [bookings]
+      summary: Solicita uma reserva (status inicial REQUESTED, publica BookingCreated)
+      operationId: createBooking
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateBookingRequest" }
+      responses:
+        "201":
+          description: Criada
+          headers:
+            Location: { schema: { type: string } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Booking" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+    get:
+      tags: [bookings]
+      summary: Lista reservas (filtros opcionais, mais recentes primeiro)
+      operationId: listBookings
+      parameters:
+        - { name: tutorId, in: query, required: false, schema: { type: string, format: uuid } }
+        - { name: caregiverId, in: query, required: false, schema: { type: string, format: uuid } }
+        - { name: status, in: query, required: false, schema: { $ref: "#/components/schemas/BookingStatus" } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Booking" } }
+
+  /bookings/{bookingId}:
+    get:
+      tags: [bookings]
+      operationId: getBooking
+      parameters: [{ $ref: "#/components/parameters/BookingId" }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Booking" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /bookings/{bookingId}/accept:
+    patch:
+      tags: [bookings]
+      summary: Cuidador aceita (REQUESTED → ACCEPTED, publica BookingAccepted)
+      operationId: acceptBooking
+      parameters: [{ $ref: "#/components/parameters/BookingId" }]
+      responses:
+        "200": { $ref: "#/components/responses/BookingOk" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /bookings/{bookingId}/reject:
+    patch:
+      tags: [bookings]
+      summary: Cuidador recusa (REQUESTED → REJECTED, publica BookingRejected)
+      operationId: rejectBooking
+      parameters: [{ $ref: "#/components/parameters/BookingId" }]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ReasonRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/BookingOk" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /bookings/{bookingId}/cancel:
+    patch:
+      tags: [bookings]
+      summary: Tutor cancela (REQUESTED|ACCEPTED → CANCELLED, publica BookingCancelled)
+      operationId: cancelBooking
+      parameters: [{ $ref: "#/components/parameters/BookingId" }]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ReasonRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/BookingOk" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+components:
+  parameters:
+    TutorId: { name: tutorId, in: path, required: true, schema: { type: string, format: uuid } }
+    BookingId: { name: bookingId, in: path, required: true, schema: { type: string, format: uuid } }
+
+  responses:
+    BookingOk:
+      description: OK
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Booking" }
+    BadRequest:
+      description: Requisição inválida (validação de campos)
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    NotFound:
+      description: Recurso não encontrado
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    Conflict:
+      description: Transição de status inválida, horário já ocupado ou e-mail duplicado
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    UnprocessableEntity:
+      description: Regra de negócio violada (pet de outro tutor, cuidador inativo, início no passado)
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+
+  schemas:
+    ServiceType:
+      type: string
+      enum: [WALK, COMPANIONSHIP, HOME_VISIT, HOSTING, TEMPORARY_CARE]
+    BookingStatus:
+      type: string
+      enum: [REQUESTED, ACCEPTED, PAID, IN_PROGRESS, COMPLETED, REJECTED, CANCELLED, EXPIRED]
+    PetSize:
+      type: string
+      enum: [SMALL, MEDIUM, LARGE]
+
+    Tutor:
+      type: object
+      required: [id, name, email]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string, maxLength: 120 }
+        email: { type: string, format: email, maxLength: 254 }
+    CreateTutorRequest:
+      type: object
+      required: [name, email]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        email: { type: string, format: email, maxLength: 254 }
+
+    Pet:
+      type: object
+      required: [id, tutorId, name, species]
+      properties:
+        id: { type: string, format: uuid }
+        tutorId: { type: string, format: uuid }
+        name: { type: string, maxLength: 80 }
+        species: { type: string, maxLength: 40, example: DOG }
+        size: { $ref: "#/components/schemas/PetSize" }
+        notes: { type: string, maxLength: 500, nullable: true }
+    CreatePetRequest:
+      type: object
+      required: [tutorId, name, species]
+      properties:
+        tutorId: { type: string, format: uuid }
+        name: { type: string, minLength: 1, maxLength: 80 }
+        species: { type: string, minLength: 1, maxLength: 40, example: DOG }
+        size: { $ref: "#/components/schemas/PetSize" }
+        notes: { type: string, maxLength: 500, nullable: true }
+
+    Caregiver:
+      type: object
+      required: [id, name, email, active]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        email: { type: string, format: email }
+        active: { type: boolean }
+
+    PriceQuote:
+      type: object
+      required: [serviceType, scheduledStart, scheduledEnd, priceCents, currency]
+      properties:
+        serviceType: { $ref: "#/components/schemas/ServiceType" }
+        scheduledStart: { type: string, format: date-time }
+        scheduledEnd: { type: string, format: date-time }
+        priceCents: { type: integer, format: int64, example: 6000 }
+        currency: { type: string, example: BRL }
+
+    CreateBookingRequest:
+      type: object
+      required: [tutorId, petId, caregiverId, serviceType, scheduledStart, scheduledEnd]
+      properties:
+        tutorId: { type: string, format: uuid }
+        petId: { type: string, format: uuid }
+        caregiverId: { type: string, format: uuid }
+        serviceType: { $ref: "#/components/schemas/ServiceType" }
+        scheduledStart: { type: string, format: date-time }
+        scheduledEnd: { type: string, format: date-time }
+
+    Booking:
+      type: object
+      required: [id, tutorId, petId, caregiverId, serviceType, status, scheduledStart, scheduledEnd, priceCents, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        tutorId: { type: string, format: uuid }
+        petId: { type: string, format: uuid }
+        caregiverId: { type: string, format: uuid }
+        serviceType: { $ref: "#/components/schemas/ServiceType" }
+        status: { $ref: "#/components/schemas/BookingStatus" }
+        scheduledStart: { type: string, format: date-time }
+        scheduledEnd: { type: string, format: date-time }
+        priceCents: { type: integer, format: int64 }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    ReasonRequest:
+      type: object
+      properties:
+        reason: { type: string, maxLength: 300 }
+
+    Problem:
+      type: object
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+        errors:
+          type: array
+          description: Erros de validação por campo (apenas 400)
+          items:
+            type: object
+            properties:
+              field: { type: string }
+              message: { type: string }

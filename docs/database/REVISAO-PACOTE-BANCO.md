@@ -1,5 +1,7 @@
 # Revisão do pacote de banco
 
+> **Atualização:** o compose isolado de `infrastructure/database/` foi integrado ao `docker-compose.yml` da raiz. Os comandos abaixo registram a revisão original; use `docker compose up -d postgres`.
+
 Este pacote foi preparado para ser extraído diretamente na raiz do repositório.
 
 ## Arquivos adicionados/atualizados

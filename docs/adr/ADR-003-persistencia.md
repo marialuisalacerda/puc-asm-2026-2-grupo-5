@@ -177,7 +177,9 @@ API → PostgreSQL
 Lê e grava dados do domínio por meio da camada de persistência.
 ```
 
-Workers não terão relação direta com o banco.
+Workers não terão relação direta com o banco da API.
+
+> **Atualização (2026-10-28, integração):** o `notification-worker` passou a ter um **banco próprio** (`notification-db`, database `notifications`) para registrar eventos processados (idempotência) e as notificações geradas. Isso reforça esta decisão: cada componente é dono do seu banco, com Flyway próprio, e nenhum acessa o banco do outro. Ver [contratos de integração](../architecture/contratos-integracao.md#ownership-dos-dados) e [ADR-004](ADR-004-mensageria.md).
 
 A comunicação assíncrona seguirá o fluxo:
 
