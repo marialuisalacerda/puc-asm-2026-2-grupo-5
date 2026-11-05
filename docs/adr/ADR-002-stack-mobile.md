@@ -1,6 +1,6 @@
 # ADR-002: Stack do aplicativo mobile
 
-Status: Proposto
+Status: Aceito
 Data: 2026-10-28
 Responsável: Amir Andrade (Arquitetura geral e C4) + Ana Carolina Magalhães (Mobile)
 Revisores: Amir Andrade (C4) + responsáveis por Backend e CI/CD e Qualidade
