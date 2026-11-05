@@ -46,7 +46,7 @@ Os workflows ficam em `.github/workflows/`, um por área:
 |---|---|---|
 | `backend-ci` | `services/api/` e `services/notification-worker/` | `mvn -B verify` (build e testes), Java 21 |
 | `mobile-ci` | `apps/mobile/` | `npm ci`, verificação de tipos, lint, testes, Node 20 |
-| `docker-ci` | Dockerfiles e `docker-compose.yml` | `docker build` de cada Dockerfile, `docker compose config` |
+| `docker-ci` | Dockerfiles e `docker-compose.yml` | `docker build` de cada `Dockerfile`, `docker compose config` e build das imagens Java pelo Compose (`--profile app`) |
 | `docs-ci` | arquivos Markdown | verificação de links internos quebrados |
 
 Regras dos workflows:

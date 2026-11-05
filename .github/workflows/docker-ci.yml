@@ -46,3 +46,8 @@ jobs:
           else
             docker compose config --quiet
           fi
+
+      # API e worker usam infrastructure/docker/java-service.dockerfile, com o contexto em
+      # services/<servico>: só o Compose conhece essa combinação (ADR-006)
+      - name: Build application images
+        run: docker compose --env-file .env.example --profile app build
