@@ -1,8 +1,8 @@
 # Plantão de Pet — app mobile
 
 Aplicativo React Native (Expo SDK 57 + TypeScript) para tutores de cães e cuidadores.
-Decisão de stack: [ADR-002](../../docs/adr/ADR-002-stack-mobile.md). Contrato consumido: [OpenAPI](../../docs/api/openapi.yaml).
-Regras, preços e dados de demonstração: [contratos de integração](../../docs/architecture/contratos-integracao.md).
+Decisão de stack: [ADR-002](../../docs/adr/ADR-002-stack-mobile.md). Contrato consumido: tipos em [src/api/types.ts](src/api/types.ts).
+Regras, preços e dados de demonstração: [src/api/mock/](src/api/mock/).
 
 ## Funcionalidades
 
