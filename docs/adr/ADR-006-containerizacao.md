@@ -1,6 +1,6 @@
 # ADR-006: Containerização e ambiente local
 
-Status: Proposto
+Status: Aceito
 Data: 2026-10-28
 Responsável: João Pedro Schlindwein (Docker e Observabilidade)
 Revisores: Amir Gabriel Dantas Santos Andrade (Arquitetura e C4) + Ana Carolina Magalhães (CI/CD)

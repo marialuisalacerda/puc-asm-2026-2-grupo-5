@@ -1,6 +1,6 @@
 # ADR-001: Estilo arquitetural do backend
 
-Status: Proposto
+Status: Aceito
 
 Data: 2026-10-24
 

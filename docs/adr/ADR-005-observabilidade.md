@@ -1,6 +1,6 @@
 # ADR-005: Estratégia de observabilidade
 
-Status: Proposto
+Status: Aceito
 Data: 2026-10-28
 Responsável: João Pedro Schlindwein (Docker e Observabilidade)
 Revisores: Amir Gabriel Dantas Santos Andrade (Arquitetura e C4) + equipe

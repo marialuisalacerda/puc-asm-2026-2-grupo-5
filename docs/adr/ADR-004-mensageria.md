@@ -1,6 +1,6 @@
 # ADR-004: Mensageria entre API e notification-worker
 
-Status: Proposto
+Status: Aceito
 Data: 2026-10-28
 Responsável: Matheus (Mensageria)
 Revisores: Amir Andrade (Arquitetura geral e C4) + responsáveis por Backend, Dados e Docker/Observabilidade
