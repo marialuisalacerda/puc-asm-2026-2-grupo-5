@@ -1,0 +1,2 @@
+# Scripts rodam em Linux, macOS e Git Bash: CRLF quebraria o shebang e o set -euo pipefail
+*.sh text eol=lf

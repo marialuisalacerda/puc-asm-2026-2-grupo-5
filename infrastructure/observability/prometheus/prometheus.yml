@@ -21,9 +21,21 @@ scrape_configs:
     static_configs:
       - targets: ["rabbitmq:15692"]
 
+  # métricas por fila (label queue), usadas no painel de filas e DLQ
+  - job_name: rabbitmq-queues
+    metrics_path: /metrics/detailed
+    params:
+      family: [queue_coarse_metrics]
+    static_configs:
+      - targets: ["rabbitmq:15692"]
+
   - job_name: postgres
     static_configs:
       - targets: ["postgres-exporter:9187"]
+
+  - job_name: postgres-notifications
+    static_configs:
+      - targets: ["notification-db-exporter:9187"]
 
   - job_name: prometheus
     static_configs:

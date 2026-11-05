@@ -37,9 +37,17 @@ groups:
           summary: "notification-worker registrando falhas no processamento de mensagens"
 
       - alert: RabbitMqQueueBacklog
-        expr: sum(rabbitmq_queue_messages_ready) > 100
+        expr: sum(rabbitmq_detailed_queue_messages_ready) > 100
         for: 5m
         labels:
           severity: warning
         annotations:
           summary: "Mais de 100 mensagens aguardando consumo no RabbitMQ"
+
+      - alert: DeadLetterQueueNotEmpty
+        expr: sum(rabbitmq_detailed_queue_messages_ready{queue="notification.booking-events.dlq"}) > 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Há mensagens na DLQ notification.booking-events.dlq — verificar e reprocessar"

@@ -1,4 +1,4 @@
-# DER inicial — PetAmparo
+# DER inicial — Plantão de Pet
 
 > Proposta para revisão junto ao responsável pelo backend antes de ser considerada contrato definitivo.
 
