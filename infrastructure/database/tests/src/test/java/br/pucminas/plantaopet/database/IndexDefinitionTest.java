@@ -1,4 +1,4 @@
-package br.pucminas.petamparo.database;
+package br.pucminas.plantaopet.database;
 
 import org.junit.jupiter.api.Test;
 

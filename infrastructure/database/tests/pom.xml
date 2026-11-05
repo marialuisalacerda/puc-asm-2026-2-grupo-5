@@ -4,10 +4,10 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>br.pucminas.petamparo</groupId>
+    <groupId>br.pucminas.plantaopet</groupId>
     <artifactId>database-tests</artifactId>
     <version>1.0.0-SNAPSHOT</version>
-    <name>PetAmparo - Database Tests</name>
+    <name>Plantão de Pet - Database Tests</name>
 
     <properties>
         <maven.compiler.release>17</maven.compiler.release>
@@ -64,9 +64,9 @@
                 <configuration>
                     <useModulePath>false</useModulePath>
                     <systemPropertyVariables>
-                        <petamparo.migrations>
+                        <plantaopet.migrations>
                             filesystem:${project.basedir}/../../../services/api/src/main/resources/db/migration
-                        </petamparo.migrations>
+                        </plantaopet.migrations>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>

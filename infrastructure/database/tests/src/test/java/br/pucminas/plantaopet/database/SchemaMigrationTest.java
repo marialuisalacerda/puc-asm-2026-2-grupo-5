@@ -1,4 +1,4 @@
-package br.pucminas.petamparo.database;
+package br.pucminas.plantaopet.database;
 
 import org.junit.jupiter.api.Test;
 
@@ -44,7 +44,7 @@ class SchemaMigrationTest extends DatabaseTestSupport {
     }
 
     private static List<String> migrationVersions() throws IOException {
-        Path dir = Path.of(System.getProperty("petamparo.migrations").trim().replaceFirst("^filesystem:", ""));
+        Path dir = Path.of(System.getProperty("plantaopet.migrations").trim().replaceFirst("^filesystem:", ""));
         try (Stream<Path> files = Files.list(dir)) {
             return files.map(f -> f.getFileName().toString())
                     .filter(name -> name.matches("V\\d+__.+\\.sql"))

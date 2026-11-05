@@ -1,4 +1,4 @@
-package br.pucminas.petamparo.database;
+package br.pucminas.plantaopet.database;
 
 import org.junit.jupiter.api.Test;
 
@@ -21,7 +21,7 @@ class ForeignKeyDeletionTest extends DatabaseTestSupport {
             )) {
                 tutor.setObject(1, tutorId);
                 tutor.setString(2, "Tutor");
-                tutor.setString(3, "delete@petamparo.test");
+                tutor.setString(3, "delete@plantaopet.test");
                 tutor.executeUpdate();
             }
 

@@ -1,4 +1,4 @@
-package br.pucminas.petamparo.database;
+package br.pucminas.plantaopet.database;
 
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,17 +12,17 @@ abstract class DatabaseTestSupport {
 
     private static final PostgreSQLContainer<?> POSTGRES =
             new PostgreSQLContainer<>("postgres:16-alpine")
-                    .withDatabaseName("petamparo_test")
-                    .withUsername("petamparo")
-                    .withPassword("petamparo");
+                    .withDatabaseName("plantaopet_test")
+                    .withUsername("plantaopet")
+                    .withPassword("plantaopet");
 
     static {
         POSTGRES.start();
 
-        String migrations = System.getProperty("petamparo.migrations");
+        String migrations = System.getProperty("plantaopet.migrations");
         if (migrations == null || migrations.isBlank()) {
             throw new IllegalStateException(
-                    "Propriedade petamparo.migrations não configurada. Execute os testes via Maven."
+                    "Propriedade plantaopet.migrations não configurada. Execute os testes via Maven."
             );
         }
 

@@ -1,4 +1,4 @@
-package br.pucminas.petamparo.database;
+package br.pucminas.plantaopet.database;
 
 import org.junit.jupiter.api.Test;
 
@@ -18,10 +18,10 @@ class ConstraintIntegrityTest extends DatabaseTestSupport {
         UUID first = UUID.randomUUID();
         UUID second = UUID.randomUUID();
 
-        insertTutor(first, "Tutor 1", "tutor@petamparo.test");
+        insertTutor(first, "Tutor 1", "tutor@plantaopet.test");
 
         assertThrows(SQLException.class,
-                () -> insertTutor(second, "Tutor 2", "tutor@petamparo.test"));
+                () -> insertTutor(second, "Tutor 2", "tutor@plantaopet.test"));
     }
 
     @Test
@@ -43,7 +43,7 @@ class ConstraintIntegrityTest extends DatabaseTestSupport {
     @Test
     void deveImpedirPorteDePetForaDosValoresPermitidos() throws Exception {
         UUID tutorId = UUID.randomUUID();
-        insertTutor(tutorId, "Tutor", "size@petamparo.test");
+        insertTutor(tutorId, "Tutor", "size@plantaopet.test");
 
         assertThrows(SQLException.class, () -> {
             try (Connection connection = connection();
@@ -125,7 +125,7 @@ class ConstraintIntegrityTest extends DatabaseTestSupport {
         UUID petId = UUID.randomUUID();
         UUID caregiverId = UUID.randomUUID();
 
-        insertTutor(tutorId, "Tutor", tutorId + "@petamparo.test");
+        insertTutor(tutorId, "Tutor", tutorId + "@plantaopet.test");
 
         try (Connection connection = connection()) {
             try (PreparedStatement statement = connection.prepareStatement(
@@ -144,7 +144,7 @@ class ConstraintIntegrityTest extends DatabaseTestSupport {
             )) {
                 statement.setObject(1, caregiverId);
                 statement.setString(2, "Cuidador");
-                statement.setString(3, caregiverId + "@petamparo.test");
+                statement.setString(3, caregiverId + "@plantaopet.test");
                 statement.executeUpdate();
             }
         }

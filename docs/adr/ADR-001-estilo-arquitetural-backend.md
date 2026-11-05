@@ -10,7 +10,7 @@ Revisores: Amir Andrade (C4) + responsáveis por API e domínio, Banco de dados 
 
 ## Contexto
 
-Precisamos definir como o backend do PetAmparo é dividido e implantado. O PetAmparo é um marketplace mobile (Android e iOS) em que tutores de cães encontram, contratam e pagam cuidadores por período.
+Precisamos definir como o backend do Plantão de Pet é dividido e implantado. O Plantão de Pet é um marketplace mobile (Android e iOS) em que tutores de cães encontram, contratam e pagam cuidadores por período.
 
 Requisitos que influenciam a decisão:
 
@@ -52,7 +52,7 @@ Negativas / riscos: a API escala e falha como um bloco; sem verificação autom�
 
 Nível afetado: C2 e C3
 
-O que muda: no C2, o sistema PetAmparo é aberto nos containers App mobile, API, Notification worker, Media worker, Message broker e Banco PostgreSQL. Setas: App → API (HTTPS/JSON); API → Banco (leitura e escrita, única com acesso); API → Message broker (publica eventos); workers → Message broker (consomem eventos); Notification worker → Serviço de notificação; Media worker → Armazenamento de mídia. No C3, a API ganha os oito módulos como componentes. O C1 não muda.
+O que muda: no C2, o sistema Plantão de Pet é aberto nos containers App mobile, API, Notification worker, Media worker, Message broker e Banco PostgreSQL. Setas: App → API (HTTPS/JSON); API → Banco (leitura e escrita, única com acesso); API → Message broker (publica eventos); workers → Message broker (consomem eventos); Notification worker → Serviço de notificação; Media worker → Armazenamento de mídia. No C3, a API ganha os oito módulos como componentes. O C1 não muda.
 
 ## Referências
 

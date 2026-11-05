@@ -19,7 +19,7 @@ Responsável pelo Backend
 
 ## Contexto
 
-O PetAmparo precisa persistir dados relacionados a tutores, pets, cuidadores e reservas, mantendo integridade entre as entidades e permitindo a evolução controlada do modelo de dados.
+O Plantão de Pet precisa persistir dados relacionados a tutores, pets, cuidadores e reservas, mantendo integridade entre as entidades e permitindo a evolução controlada do modelo de dados.
 
 A arquitetura do backend adota uma API Java com Spring Boot organizada como monólito modular. O fluxo principal de reservas exige consistência entre dados relacionados e a solução utiliza um único banco relacional acessado pela API.
 
@@ -56,7 +56,7 @@ As alternativas de banco de dados foram avaliadas considerando:
 
 #### PostgreSQL
 
-PostgreSQL atende aos requisitos atuais de persistência do PetAmparo, oferecendo suporte a transações, integridade referencial, constraints, índices e consultas relacionais.
+PostgreSQL atende aos requisitos atuais de persistência do Plantão de Pet, oferecendo suporte a transações, integridade referencial, constraints, índices e consultas relacionais.
 
 Sua integração com Java, Spring Boot, Spring Data JPA e Flyway é madura e permite que o schema seja gerenciado de forma versionada e reproduzível.
 
@@ -68,7 +68,7 @@ Esses recursos adicionais não são requisitos obrigatórios da versão atual. E
 
 MySQL também é uma alternativa tecnicamente viável.
 
-Ele oferece banco relacional transacional, integridade referencial, índices e integração consolidada com Spring Boot, Spring Data JPA e Flyway. Portanto, os requisitos atuais do PetAmparo poderiam ser implementados utilizando MySQL sem alteração relevante na arquitetura da aplicação.
+Ele oferece banco relacional transacional, integridade referencial, índices e integração consolidada com Spring Boot, Spring Data JPA e Flyway. Portanto, os requisitos atuais do Plantão de Pet poderiam ser implementados utilizando MySQL sem alteração relevante na arquitetura da aplicação.
 
 A alternativa não foi descartada por incapacidade técnica.
 
@@ -78,7 +78,7 @@ Para os requisitos atualmente identificados, não existe uma característica esp
 
 SQLite possui baixo custo de configuração e é adequado a cenários simples ou aplicações com armazenamento local.
 
-Entretanto, não representa adequadamente o ambiente previsto para o PetAmparo. A solução possui uma API backend executada como aplicação servidor, com requisições concorrentes, relacionamentos entre entidades e execução em containers. O banco também deverá funcionar como componente independente do processo da aplicação.
+Entretanto, não representa adequadamente o ambiente previsto para o Plantão de Pet. A solução possui uma API backend executada como aplicação servidor, com requisições concorrentes, relacionamentos entre entidades e execução em containers. O banco também deverá funcionar como componente independente do processo da aplicação.
 
 Por esses motivos, SQLite não foi selecionado como banco principal.
 
