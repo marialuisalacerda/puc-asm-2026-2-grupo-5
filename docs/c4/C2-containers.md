@@ -1,6 +1,6 @@
 # C4 · Nível 2 — Containers
 
-> Índice do C4: [README](README.md) · Anterior: [C1 — Contexto](C1-contexto.md)
+> Índice do C4: [README](README.md) · Anterior: [C1 — Contexto](C1-contexto.md) · Próximos: [C3 — API](C3-componentes-api.md), [C3 — Worker](C3-componentes-worker.md)
 
 ## Objetivo
 
@@ -71,9 +71,9 @@ Legenda: azul = container da aplicação; verde = banco de dados; cinza = observ
 | Container | Tecnologia | Responsabilidade | Código / configuração |
 |---|---|---|---|
 | App mobile | React Native, Expo, TypeScript | Interface do tutor e do cuidador; alterna HTTP/Mock por `EXPO_PUBLIC_USE_MOCKS` | `apps/mobile/` |
-| API | Java 21, Spring Boot 3.3, Spring Web, Spring Data JPA, Spring AMQP | Contrato REST, regras de negócio, preço, publicação de eventos | `services/api/` |
+| API | Java 21, Spring Boot 3.3, Spring Web, Spring Data JPA, Spring AMQP | Contrato REST ([OpenAPI](../api/openapi.yaml)), regras de negócio, preço, publicação de eventos | `services/api/` |
 | PostgreSQL da API | PostgreSQL 16 | Dados do domínio de reservas | migrations em `services/api/src/main/resources/db/migration/` |
-| RabbitMQ | RabbitMQ 3.13 (management + prometheus) | Transporte assíncrono dos eventos | `infrastructure/docker/rabbitmq/` |
+| RabbitMQ | RabbitMQ 3.13 (management + prometheus) | Transporte assíncrono dos eventos ([contrato de eventos](../api/eventos.md)) | `infrastructure/docker/rabbitmq/` |
 | notification-worker | Java 21, Spring Boot 3.3, Spring AMQP, Spring Data JPA | Consumo idempotente, retry, DLQ, registro de notificações | `services/notification-worker/` |
 | PostgreSQL de notificações | PostgreSQL 16 | Idempotência e notificações | migrations em `services/notification-worker/src/main/resources/db/migration/` |
 | OTel Collector, Prometheus, Jaeger, Loki, Grafana, postgres-exporter | ver ADR-005 | Logs, métricas, traces, dashboards e alertas | [`infrastructure/observability/`](../../infrastructure/observability/README.md) |
@@ -86,7 +86,7 @@ notification-worker ▶ PostgreSQL de notificações         dono: worker
 API ──evento──▶ RabbitMQ ──▶ notification-worker         único caminho entre os dois
 ```
 
-- Cada banco tem **um único dono** e um Flyway próprio. Nenhum container lê ou escreve no banco do outro ([ADR-003](../adr/ADR-003-persistencia.md)).
+- Cada banco tem **um único dono** e um Flyway próprio. Nenhum container lê ou escreve no banco do outro ([ADR-003](../adr/ADR-003-persistencia.md), [contratos](../architecture/contratos-integracao.md#ownership-dos-dados)).
 - O worker recebe **tudo** de que precisa no evento (`data` do envelope). Ele não chama a API nem lê `bookings`.
 - Essa separação é a estratégia de "dados distribuídos / ownership" do projeto: os bancos são independentes e a consistência entre eles é **eventual**, via eventos.
 

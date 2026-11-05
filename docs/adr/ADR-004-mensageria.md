@@ -51,7 +51,7 @@ Requisitos e restrições que influenciam a decisão:
 ## Decisão
 Escolhemos a **opção 1 (RabbitMQ com Spring AMQP)** porque atende desacoplamento, durabilidade,
 retry e DLQ com recursos nativos, preserva o ownership dos dados e tem custo operacional
-compatível com o time.
+compatível com o time. Contrato detalhado em [docs/api/eventos.md](../api/eventos.md).
 
 - **Topologia:** exchange `booking.events` (`topic`, durável), routing keys `booking.created`,
   `booking.accepted`, `booking.rejected`, `booking.cancelled`; fila durável
@@ -107,6 +107,10 @@ O que muda:
   (consulta read-only).
 
 ## Referências
+- [Contrato de eventos](../api/eventos.md) e [schema JSON](../api/events/booking-event.schema.json)
+- [Contratos de integração](../architecture/contratos-integracao.md)
+- [notification-worker](../../services/notification-worker/README.md) e
+  [guia de mensageria](../../infrastructure/messaging/README.md)
 - ADR-001 (estilo arquitetural), ADR-003 (persistência e ownership), ADR-005 (observabilidade),
   ADR-006 (containerização)
 - RabbitMQ — Dead Letter Exchanges: <https://www.rabbitmq.com/docs/dlx>

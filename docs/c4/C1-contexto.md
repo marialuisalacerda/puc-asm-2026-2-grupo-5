@@ -54,8 +54,8 @@ Legenda: azul-escuro = pessoa; azul = o sistema; cinza tracejado = **fora do MVP
 ## Decisões de escopo refletidas no diagrama
 
 - **Notificações no MVP:** o sistema **gera e registra** as notificações (banco do `notification-worker`), mas não as entrega por um provedor externo. A troca do registro por um provedor real fica atrás de uma interface no worker e não muda este nível.
-- **Pagamento no MVP:** o preço é calculado e gravado na reserva (`priceCents`), mas não há cobrança. O ciclo de estados do MVP não tem `PAID`.
-- **Identidade:** não há autenticação no MVP; tutor e cuidador são identificados pelos IDs de demonstração do seed.
+- **Pagamento no MVP:** o preço é calculado e gravado na reserva (`priceCents`), mas não há cobrança. O ciclo de estados do MVP não tem `PAID` (ver [estados da reserva](../diagrams/estados-reserva.md)).
+- **Identidade:** não há autenticação no MVP; tutor e cuidador são identificados pelos IDs de demonstração do seed ([contratos de integração](../architecture/contratos-integracao.md)).
 
 ## Versão em imagem
 
