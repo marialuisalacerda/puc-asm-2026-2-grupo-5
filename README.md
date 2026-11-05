@@ -8,10 +8,10 @@ Grupo 05 · ASM 2026/2
 | Integrante | Responsabilidade principal | Matrícula |
 |---|---|---|
 | Amir Gabriel Dantas Santos Andrade | Arquitetura e C4 | 1666035 |
-| Integrante 2 | Aplicativo Mobile | — |
-| Integrante 3 | Backend e domínio | — |
+| Amir Gabriel Dantas Santos Andrade e Ana Carolina Magalhães | Aplicativo Mobile | 1666035 e 191943 |
+| Willian | Backend e domínio | — |
 | Maria Luísa Lacerda | Banco de dados | 257115 |
-| Integrante 5 | Mensageria | — |
+| Matheus | Mensageria | — |
 | João Pedro Schlindwein | Docker e Observabilidade | 255485 |
 | Ana Carolina Magalhães | CI/CD e Qualidade | 191943 |
 

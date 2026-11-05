@@ -2,7 +2,7 @@
 
 Status: Proposto
 Data: 2026-10-28
-Responsável: [a definir] (Mensageria)
+Responsável: Matheus (Mensageria)
 Revisores: Amir Andrade (Arquitetura geral e C4) + responsáveis por Backend, Dados e Docker/Observabilidade
 
 ## Contexto
