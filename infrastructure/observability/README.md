@@ -17,7 +17,7 @@ Jaeger     Prometheus       Loki
    \            |             /
     +------- Grafana --------+
 
-Prometheus também coleta: RabbitMQ (:15692) e PostgreSQL (postgres-exporter)
+Prometheus também coleta: RabbitMQ (:15692, agregado e por fila) e PostgreSQL (postgres-exporter)
 ```
 
 ## Estrutura
@@ -50,7 +50,7 @@ docker compose up -d
 |---|---|
 | Visão geral | req/s, taxa de erro 5xx, reservas criadas, alvos ativos |
 | API · HTTP | req/s por rota, p50/p95/p99, respostas por status, eventos de reserva |
-| Mensageria | publicadas/entregues no RabbitMQ, fila, processadas/falhas no worker |
+| Mensageria | publicadas/entregues, mensagens por fila, DLQ, processadas/duplicadas/erros no worker, eventos por tipo |
 | Infraestrutura | heap JVM, conexões PostgreSQL, disponibilidade |
 
 Painéis da API e do worker mostram "sem dados" até os serviços rodarem (`--profile app`).
@@ -69,8 +69,8 @@ meterRegistry.counter("booking.created").increment();   // booking_created_total
 // também: booking.accepted, booking.rejected, booking.cancelled
 
 // notification-worker — no consumer
-meterRegistry.counter("message.processing").increment();         // message_processing_total
-meterRegistry.counter("message.processing.errors").increment();  // message_processing_errors_total
+meterRegistry.counter("message.processing", "event_type", type, "outcome", "processed").increment(); // message_processing_total
+meterRegistry.counter("message.processing.errors", "event_type", type).increment();                // message_processing_errors_total
 ```
 
 `MeterRegistry` é injetado pelo Spring (requer `spring-boot-starter-actuator`) e pode ser
@@ -89,4 +89,4 @@ java -javaagent:opentelemetry-javaagent.jar \
 ## Alertas
 
 Definidos em `prometheus/alerts.yml` e visíveis em http://localhost:9090/alerts:
-`TargetDown`, `ApiHighErrorRate`, `ApiHighLatencyP95`, `MessageProcessingErrors`, `RabbitMqQueueBacklog`.
+`TargetDown`, `ApiHighErrorRate`, `ApiHighLatencyP95`, `MessageProcessingErrors`, `RabbitMqQueueBacklog`, `DeadLetterQueueNotEmpty`.

@@ -37,7 +37,7 @@ Escolhemos **Docker + Docker Compose** (opção 2).
 - **Configuração por variáveis de ambiente:** `.env.example` versionado com valores
   fictícios; `.env` real é ignorado pelo Git. Nomes do banco seguem `docs/database/README.md`
   (`DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`).
-- **Ownership de dados (ADR-003):** o `notification-worker` não depende do PostgreSQL no Compose.
+- **Ownership de dados (ADR-003):** dois PostgreSQL separados no Compose — `postgres` (dono: API) e `notification-db` (dono: `notification-worker`); nenhum serviço recebe credenciais do banco do outro.
 - **Healthchecks** em PostgreSQL e RabbitMQ; serviços Java só iniciam com as dependências saudáveis.
 - **Versões de imagens fixadas** (sem `latest`) para reprodutibilidade.
 - O mobile (Expo) **não** é containerizado: roda com o tooling do Expo apontando para a API exposta pelo Compose.
@@ -51,6 +51,7 @@ Positivas:
 Negativas / riscos:
 - consumo de memória da stack completa (~2–3 GB);
 - conflitos de porta com outros projetos locais — mitigado por portas configuráveis no `.env`;
+- portas do host escolhidas para não colidir com o Metro do Expo (8081): worker publicado na 8082;
 - o Dockerfile compartilhado assume projetos Maven com `pom.xml` e `src/` na raiz do serviço;
   serviços com outra estrutura precisarão de Dockerfile próprio.
 

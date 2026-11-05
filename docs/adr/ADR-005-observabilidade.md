@@ -51,7 +51,7 @@ código de negócio à observabilidade.
 - **Visualização:** **Grafana** com datasources e dashboard provisionados como código;
   correlação trace ↔ logs pelo `trace_id`.
 - **Alertas:** regras em `infrastructure/observability/prometheus/alerts.yml`
-  (alvo fora, erro 5xx > 5%, p95 > 1s, falhas no worker, fila acumulada).
+  (alvo fora, erro 5xx > 5%, p95 > 1s, falhas no worker, fila acumulada, mensagens na DLQ).
 
 ### Contrato de métricas de negócio
 Métricas customizadas são registradas pelo código com Micrometer (`MeterRegistry`) ou com a
