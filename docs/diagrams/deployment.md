@@ -33,6 +33,7 @@ flowchart TB
                 otel["otel-collector<br/>contrib 0.111.0<br/>:4317 · :4318 · :8889 interno"]
                 prom["prometheus<br/>v2.54.1 · :9090"]
                 pexp["postgres-exporter<br/>v0.15.0 · :9187 interno"]
+                nexp["notification-db-exporter<br/>v0.15.0 · :9187 interno"]
                 jaeger["jaeger<br/>all-in-one 1.60.0 · :16686"]
                 loki["loki<br/>3.1.1 · :3100 interno"]
                 graf["grafana<br/>11.2.0 · :3000"]
@@ -63,6 +64,8 @@ flowchart TB
     prom -->|"scrape"| mq
     prom -->|"scrape"| pexp
     pexp --> pg
+    prom -->|"scrape"| nexp
+    nexp --> ndb
     graf --> prom
     graf --> jaeger
     graf --> loki
@@ -103,7 +106,7 @@ Todas configuráveis no `.env` (ver `.env.example`).
 | jaeger | 16686 | `JAEGER_PORT` | interface de traces |
 | grafana | 3000 | `GRAFANA_PORT` | dashboards |
 
-Somente na rede interna (sem porta no host): `notification-db` (5432), `loki` (3100), `postgres-exporter` (9187), métricas do RabbitMQ (15692) e do Collector (8888/8889).
+Somente na rede interna (sem porta no host): `notification-db` (5432), `loki` (3100), `postgres-exporter` e `notification-db-exporter` (9187), métricas do RabbitMQ (15692) e do Collector (8888/8889).
 
 ## Profiles e ordem de subida
 

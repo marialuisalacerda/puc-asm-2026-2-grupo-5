@@ -28,6 +28,7 @@ flowchart TB
         otel["<b>OTel Collector</b><br/><i>[Container: otelcol-contrib · 4317/4318]</i><br/>Recebe OTLP e roteia por sinal"]
         prom["<b>Prometheus</b><br/><i>[Container: Prometheus 2.54]</i><br/>Métricas e alertas"]
         exporter["<b>postgres-exporter</b><br/><i>[Container]</i><br/>Métricas do PostgreSQL da API"]
+        nexporter["<b>notification-db-exporter</b><br/><i>[Container]</i><br/>Métricas do PostgreSQL de notificações"]
         jaeger["<b>Jaeger</b><br/><i>[Container: all-in-one 1.60]</i><br/>Traces distribuídos"]
         loki["<b>Loki</b><br/><i>[Container: Loki 3.1]</i><br/>Logs"]
         grafana["<b>Grafana</b><br/><i>[Container: Grafana 11.2]</i><br/>Dashboards e correlação"]
@@ -50,6 +51,8 @@ flowchart TB
     prom -->|"HTTP scrape :15692"| broker
     prom -->|"HTTP scrape :9187"| exporter
     exporter -->|"SQL"| apidb
+    prom -->|"HTTP scrape :9187"| nexporter
+    nexporter -->|"SQL"| workerdb
     grafana -->|"PromQL"| prom
     grafana -->|"API Jaeger"| jaeger
     grafana -->|"LogQL"| loki
@@ -61,7 +64,7 @@ flowchart TB
     class tutor,cuidador person
     class mobile,api,worker,broker container
     class apidb,workerdb db
-    class otel,prom,exporter,jaeger,loki,grafana infra
+    class otel,prom,exporter,nexporter,jaeger,loki,grafana infra
 ```
 
 Legenda: azul = container da aplicação; verde = banco de dados; cinza = observabilidade. Seta tracejada = uso secundário.
@@ -76,7 +79,7 @@ Legenda: azul = container da aplicação; verde = banco de dados; cinza = observ
 | RabbitMQ | RabbitMQ 3.13 (management + prometheus) | Transporte assíncrono dos eventos ([contrato de eventos](../api/eventos.md)) | `infrastructure/docker/rabbitmq/` |
 | notification-worker | Java 21, Spring Boot 3.3, Spring AMQP, Spring Data JPA | Consumo idempotente, retry, DLQ, registro de notificações | `services/notification-worker/` |
 | PostgreSQL de notificações | PostgreSQL 16 | Idempotência e notificações | migrations em `services/notification-worker/src/main/resources/db/migration/` |
-| OTel Collector, Prometheus, Jaeger, Loki, Grafana, postgres-exporter | ver ADR-005 | Logs, métricas, traces, dashboards e alertas | [`infrastructure/observability/`](../../infrastructure/observability/README.md) |
+| OTel Collector, Prometheus, Jaeger, Loki, Grafana, postgres-exporter, notification-db-exporter | ver ADR-005 | Logs, métricas, traces, dashboards e alertas | [`infrastructure/observability/`](../../infrastructure/observability/README.md) |
 
 ## Ownership dos dados
 
