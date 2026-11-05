@@ -6,7 +6,7 @@ Proposto
 
 ## Data
 
-2026-10-23
+2026-10-28
 
 ## Responsável
 
@@ -177,7 +177,9 @@ API → PostgreSQL
 Lê e grava dados do domínio por meio da camada de persistência.
 ```
 
-Workers não terão relação direta com o banco.
+Workers não terão relação direta com o banco da API.
+
+> **Atualização (2026-10-28, integração):** o `notification-worker` passou a ter um **banco próprio** (`notification-db`, database `notifications`) para registrar eventos processados (idempotência) e as notificações geradas. Isso reforça esta decisão: cada componente é dono do seu banco, com Flyway próprio, e nenhum acessa o banco do outro. Ver contratos de integração e ADR-004.
 
 A comunicação assíncrona seguirá o fluxo:
 
@@ -234,7 +236,7 @@ Os atributos, cardinalidades, constraints e índices serão detalhados no modelo
 
 - [Guia de persistência](../database/README.md)
 - [`docs/diagrams/`] — DER e diagramas do modelo de dados
-- ADR-001 — Estilo arquitetural do backend
+- [ADR-001 — Estilo arquitetural do backend](../adr/ADR-001-estilo-arquitetural-backend.md)
 - Documentação do Flyway
 - Spring Data JPA
 - Michael Nygard, *Documenting Architecture Decisions*

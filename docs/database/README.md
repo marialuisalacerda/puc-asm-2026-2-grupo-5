@@ -28,8 +28,6 @@ services/api/
 
 infrastructure/
 └── database/
-    ├── docker-compose.yml          # PostgreSQL local enquanto o compose global não estiver integrado
-    ├── .env.example
     └── tests/                      # testes isolados de schema/migrations
 
 docs/
@@ -134,17 +132,18 @@ DB_USERNAME
 DB_PASSWORD
 ```
 
-O arquivo `infrastructure/database/.env.example` contém somente valores locais/fictícios.
+O arquivo `.env.example` da raiz contém somente valores locais/fictícios.
 
 ## Ambiente PostgreSQL local
 
-Enquanto o Docker Compose global do projeto não estiver integrado, o banco pode ser iniciado isoladamente:
+O PostgreSQL da API sobe pelo Docker Compose da raiz ([ADR-006](../adr/ADR-006-containerizacao.md)):
 
 ```bash
-docker compose -f infrastructure/database/docker-compose.yml up -d
+cp .env.example .env
+docker compose up -d postgres
 ```
 
-Este compose deverá posteriormente ser integrado ao compose raiz pelo responsável de infraestrutura, evitando configurações duplicadas.
+As migrations são aplicadas pela própria API ao iniciar (Flyway). O `notification-worker` usa um banco separado (`notification-db`), conforme o ownership definido no [ADR-003](../adr/ADR-003-persistencia.md).
 
 ## Testes
 

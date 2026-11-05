@@ -2,11 +2,16 @@ package br.pucminas.petamparo.database;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -31,8 +36,21 @@ class SchemaMigrationTest extends DatabaseTestSupport {
                 lastVersion = result.getString("version");
             }
 
-            assertEquals(2, count);
-            assertEquals("2", lastVersion);
+            // O esperado vem dos arquivos versionados: novas migrations não quebram este teste.
+            List<String> versions = migrationVersions();
+            assertEquals(versions.size(), count);
+            assertEquals(versions.get(versions.size() - 1), lastVersion);
+        }
+    }
+
+    private static List<String> migrationVersions() throws IOException {
+        Path dir = Path.of(System.getProperty("petamparo.migrations").trim().replaceFirst("^filesystem:", ""));
+        try (Stream<Path> files = Files.list(dir)) {
+            return files.map(f -> f.getFileName().toString())
+                    .filter(name -> name.matches("V\\d+__.+\\.sql"))
+                    .map(name -> name.substring(1, name.indexOf("__")))
+                    .sorted((a, b) -> Integer.compare(Integer.parseInt(a), Integer.parseInt(b)))
+                    .toList();
         }
     }
 
