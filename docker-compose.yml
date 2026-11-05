@@ -143,7 +143,9 @@ services:
       - ./infrastructure/docker/rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins:ro
       - rabbitmq-data:/var/lib/rabbitmq
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      # como usuário rabbitmq: rodando como root, o check pode criar o .erlang.cookie antes do
+      # servidor, que então cai com eacces no primeiro boot
+      test: ["CMD", "su-exec", "rabbitmq", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 10s
       timeout: 10s
       retries: 10
