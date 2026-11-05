@@ -1,11 +1,8 @@
 # ADR-007: Integração contínua e qualidade
 
 Status: Proposto
-
 Data: 2026-10-28
-
 Responsável: Ana Carolina Magalhães (CI/CD e Qualidade)
-
 Revisores: Amir Andrade (C4) + responsáveis por Backend, Mobile e Docker/Observabilidade
 
 ## Contexto
