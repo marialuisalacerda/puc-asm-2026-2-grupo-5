@@ -1,0 +1,54 @@
+name: backend-ci
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: backend (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [api, notification-worker]
+    defaults:
+      run:
+        working-directory: services/${{ matrix.service }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Pula o build enquanto o projeto Maven do serviço não existir (ADR-007)
+      - name: Check Maven project
+        id: project
+        working-directory: .
+        run: |
+          if [ -f "services/${{ matrix.service }}/pom.xml" ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::services/${{ matrix.service }}/pom.xml não encontrado, build ignorado."
+          fi
+
+      - uses: actions/setup-java@v4
+        if: steps.project.outputs.exists == 'true'
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: services/${{ matrix.service }}/pom.xml
+
+      - name: Build and test
+        if: steps.project.outputs.exists == 'true'
+        run: |
+          if [ -x ./mvnw ]; then MVN=./mvnw; else MVN=mvn; fi
+          $MVN -B -ntp verify

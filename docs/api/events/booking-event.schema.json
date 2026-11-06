@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://plantaopet.local/schemas/booking-event.v1.json",
+  "title": "BookingEvent v1",
+  "type": "object",
+  "required": ["eventId", "eventType", "version", "occurredAt", "data"],
+  "additionalProperties": false,
+  "properties": {
+    "eventId": { "type": "string", "format": "uuid" },
+    "eventType": { "enum": ["BookingCreated", "BookingAccepted", "BookingRejected", "BookingCancelled"] },
+    "version": { "const": 1 },
+    "occurredAt": { "type": "string", "format": "date-time" },
+    "data": {
+      "type": "object",
+      "required": ["bookingId", "tutorId", "petId", "caregiverId", "serviceType", "status", "scheduledStart", "scheduledEnd", "priceCents"],
+      "properties": {
+        "bookingId": { "type": "string", "format": "uuid" },
+        "tutorId": { "type": "string", "format": "uuid" },
+        "petId": { "type": "string", "format": "uuid" },
+        "caregiverId": { "type": "string", "format": "uuid" },
+        "serviceType": { "enum": ["WALK", "COMPANIONSHIP", "HOME_VISIT", "HOSTING", "TEMPORARY_CARE"] },
+        "status": { "enum": ["REQUESTED", "ACCEPTED", "REJECTED", "CANCELLED"] },
+        "scheduledStart": { "type": "string", "format": "date-time" },
+        "scheduledEnd": { "type": "string", "format": "date-time" },
+        "priceCents": { "type": "integer", "minimum": 0 },
+        "reason": { "type": ["string", "null"], "maxLength": 300 }
+      }
+    }
+  }
+}

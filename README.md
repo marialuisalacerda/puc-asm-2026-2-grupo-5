@@ -1,17 +1,42 @@
 # Trabalho Final · Arquitetura de Software Multiplataforma
+PUC MINAS - Pós-Graduação em Arquitetura de Software Distribuído
+
 Grupo 05 · ASM 2026/2
 
 ## Integrantes
 
 | Integrante | Responsabilidade principal | Matrícula |
-|---|---| --- |
-| Integrante 1 | Arquitetura e C4 |
-| Integrante 2 | Aplicativo Mobile |
-| Integrante 3 | Backend e domínio |
-| Maria Luísa Lacerda | Banco de dados | 257115
-| Integrante 5 | Mensageria |
-| Integrante 6 | Docker e Observabilidade |
-| Integrante 7 | CI/CD e Qualidade |
+|---|---|---|
+| Amir Gabriel Dantas Santos Andrade | Arquitetura e C4 | 1666035 |
+| Amir Gabriel Dantas Santos Andrade e Ana Carolina Magalhães | Aplicativo Mobile | 1666035 e 191943 |
+| Willian | Backend e domínio | — |
+| Maria Luísa Lacerda | Banco de dados | 257115 |
+| Matheus | Mensageria | — |
+| João Pedro Schlindwein | Docker e Observabilidade | 255485 |
+| Ana Carolina Magalhães | CI/CD e Qualidade | 191943 |
+
+---
+
+## Como executar
+
+Pré-requisito: Docker Desktop. Java 21 e Node 20 só para desenvolver fora dos containers.
+
+```bash
+cp .env.example .env
+docker compose --profile app up -d --build   # API, worker, bancos, RabbitMQ e observabilidade
+./scripts/smoke-test.sh                      # fluxo de ponta a ponta: reserva → evento → notificação
+```
+
+| O quê | Onde |
+|---|---|
+| API (Swagger) | http://localhost:8080/swagger-ui.html |
+| notification-worker | http://localhost:8082/notifications |
+| Grafana | http://localhost:3000 (admin/admin) |
+| Jaeger | http://localhost:16686 |
+| RabbitMQ | http://localhost:15672 |
+| Mobile | `cd apps/mobile && npm install && npx expo start` ([guia](apps/mobile/README.md)) |
+
+Contratos: [OpenAPI](docs/api/openapi.yaml) · [eventos](docs/api/eventos.md) · [integração](docs/architecture/contratos-integracao.md)
 
 ---
 
@@ -141,10 +166,19 @@ A arquitetura pode evoluir durante o projeto, desde que alterações relevantes 
 │
 ├── services/
 │   ├── api/
+│   │   └── src/
+│   │       ├── main/
+│   │       │   ├── java/
+│   │       │   └── resources/
+│   │       │       ├── application.yml
+│   │       │       └── db/
+│   │       │           └── migration/
+│   │       └── test/
 │   └── notification-worker/
 │
 ├── infrastructure/
 │   ├── database/
+│   │   └── README.md
 │   ├── messaging/
 │   ├── observability/
 │   └── docker/
@@ -154,6 +188,8 @@ A arquitetura pode evoluir durante o projeto, desde que alterações relevantes 
 │   ├── architecture/
 │   ├── c4/
 │   ├── diagrams/
+│   ├── database/
+│   │   └── README.md
 │   └── api/
 │
 ├── .github/
@@ -164,6 +200,12 @@ A arquitetura pode evoluir durante o projeto, desde que alterações relevantes 
 ├── AGENTS.md
 └── .gitignore
 ```
+
+> **Banco de dados:** as migrations Flyway que definem e evoluem o schema ficam em
+> `services/api/src/main/resources/db/migration/`. A pasta `infrastructure/database/`
+> concentra apenas artefatos operacionais/de infraestrutura do PostgreSQL e não deve
+> duplicar migrations. A documentação de modelagem, convenções e ownership fica em
+> `docs/database/`, enquanto o DER fica em `docs/diagrams/`.
 
 ---
 
@@ -274,7 +316,7 @@ A comunicação assíncrona entre a API e seus consumidores será realizada atra
 
 ## Banco de dados
 
-O PostgreSQL será utilizado como banco relacional principal.
+O PostgreSQL será utilizado como banco relacional principal e o Flyway será utilizado para versionar a evolução do schema.
 
 O modelo inicial deverá representar pelo menos:
 
@@ -294,7 +336,17 @@ Tutor
 
 A estratégia de ownership dos dados deverá ser documentada para evitar que componentes independentes acessem diretamente dados pelos quais não são responsáveis.
 
-As alterações no banco devem ser versionadas por migrations.
+Os artefatos de banco deverão seguir estes caminhos:
+
+```text
+services/api/src/main/resources/db/migration/   # migrations Flyway: schema e seeds versionados
+infrastructure/database/                        # artefatos operacionais/de infraestrutura do PostgreSQL
+docs/database/                                  # documentação de modelagem, convenções e ownership
+docs/diagrams/                                  # DER e demais diagramas
+docs/adr/ADR-003-persistencia.md                # decisão arquitetural de persistência
+```
+
+As alterações estruturais e os dados iniciais controlados pelo projeto devem ser versionados por migrations. Não devem existir scripts concorrentes de criação do schema fora do diretório de migrations do Flyway.
 
 ---
 
@@ -346,6 +398,10 @@ Consumidores deverão considerar mensagens duplicadas e aplicar idempotência qu
 ---
 
 ## Observabilidade
+
+> Decisão: [ADR-005](docs/adr/ADR-005-observabilidade.md) · Guia: [infrastructure/observability](infrastructure/observability/README.md)
+>
+> OpenTelemetry Java Agent → OTel Collector → Prometheus (métricas), Jaeger (traces), Loki (logs) → Grafana.
 
 A solução deverá demonstrar os três pilares de observabilidade:
 
@@ -416,9 +472,26 @@ docker compose up -d
 
 Sempre que possível, este comando deverá subir toda a infraestrutura necessária ao backend.
 
+> Decisão: [ADR-006](docs/adr/ADR-006-containerizacao.md) · Guia: [infrastructure/docker](infrastructure/docker/README.md)
+
+```bash
+cp .env.example .env
+docker compose up -d                  # PostgreSQL, RabbitMQ e observabilidade
+docker compose --profile app up -d    # + API e notification-worker
+```
+
+| Ferramenta | URL local |
+|---|---|
+| Grafana | http://localhost:3000 |
+| Prometheus | http://localhost:9090 |
+| Jaeger | http://localhost:16686 |
+| RabbitMQ | http://localhost:15672 |
+
 ---
 
 ## Modelagem C4
+
+> Modelos em Mermaid: [docs/c4](docs/c4/README.md) · Visão geral: [docs/architecture/visao-geral.md](docs/architecture/visao-geral.md)
 
 O C4 deverá ser iniciado antes da implementação e atualizado conforme a arquitetura evoluir.
 
@@ -495,17 +568,18 @@ ADR
 Implementação
 ```
 
-Exemplos de ADRs previstos:
+ADRs registrados:
 
-```text
-ADR-001-stack-mobile.md
-ADR-002-arquitetura-backend.md
-ADR-003-persistencia.md
-ADR-004-mensageria.md
-ADR-005-observabilidade.md
-ADR-006-containerizacao.md
-ADR-007-ci-cd.md
-```
+| ADR | Decisão |
+|---|---|
+| [ADR-000](docs/adr/ADR-000-layout.md) | Template dos ADRs |
+| [ADR-001](docs/adr/ADR-001-estilo-arquitetural-backend.md) | Monolito modular no backend |
+| [ADR-002](docs/adr/ADR-002-stack-mobile.md) | Stack mobile: React Native + Expo + TypeScript |
+| [ADR-003](docs/adr/ADR-003-persistencia.md) | PostgreSQL + JPA + Flyway; ownership dos dados |
+| [ADR-004](docs/adr/ADR-004-mensageria.md) | RabbitMQ, eventos, retry, DLQ e idempotência |
+| [ADR-005](docs/adr/ADR-005-observabilidade.md) | OpenTelemetry, Prometheus, Jaeger, Loki e Grafana |
+| [ADR-006](docs/adr/ADR-006-containerizacao.md) | Docker e Docker Compose |
+| [ADR-007](docs/adr/ADR-007-ci-cd.md) | CI com GitHub Actions |
 
 Os ADRs deverão ficar em:
 
@@ -531,6 +605,8 @@ Os diagramas deverão ficar em:
 ```text
 docs/diagrams/
 ```
+
+Disponíveis: [DER](docs/diagrams/DER-inicial.md) · [sequência da reserva](docs/diagrams/sequencia-reserva.md) · [estados da reserva](docs/diagrams/estados-reserva.md) · [mensageria](docs/diagrams/mensageria.md) · [deployment](docs/diagrams/deployment.md)
 
 ---
 
@@ -609,29 +685,29 @@ Exemplo:
 ```bash
 git checkout develop
 git pull origin develop
-git checkout -b feat/12-create-booking
+git checkout -b feat/create-booking
 ```
 
 Convenção:
 
 ```text
-feat/<issue>-<descricao>
-fix/<issue>-<descricao>
-infra/<issue>-<descricao>
-docs/<issue>-<descricao>
-test/<issue>-<descricao>
-refactor/<issue>-<descricao>
+feat/<descricao>
+fix/<descricao>
+infra/<descricao>
+docs/<descricao>
+test/<descricao>
+refactor/<descricao>
 ```
 
 Exemplos:
 
 ```text
-feat/12-create-booking
-feat/15-caregiver-search
-infra/18-rabbitmq
-infra/22-observability
-docs/25-c4-container
-fix/30-booking-validation
+feat/create-booking
+feat/caregiver-search
+infra/rabbitmq
+infra/observability
+docs/c4-container
+fix/booking-validation
 ```
 
 ---
@@ -686,7 +762,7 @@ develop → main
 Cada Pull Request deverá informar:
 
 - objetivo da alteração;
-- Issue relacionada;
+- contexto ou motivação da alteração, quando necessário;
 - como testar;
 - evidências quando necessário;
 - possíveis impactos arquiteturais.
@@ -889,6 +965,7 @@ docs/
 ├── architecture/
 ├── c4/
 ├── diagrams/
+├── database/
 └── api/
 ```
 
@@ -897,7 +974,8 @@ Principais referências:
 - [Padrões obrigatórios do repositório](AGENTS.md)
 - `docs/adr/` — decisões arquiteturais
 - `docs/c4/` — modelagem C4
-- `docs/diagrams/` — diagramas complementares
+- `docs/diagrams/` — diagramas complementares, incluindo o DER
+- `docs/database/` — documentação de modelagem, convenções e ownership dos dados
 - `docs/api/` — contratos da API
 - `docs/architecture/` — documentação arquitetural geral
 
